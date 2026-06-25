@@ -1,0 +1,13 @@
+{
+  "name": "mock-enterprise-app",
+  "private": true,
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "node-forge": "^1.3.1",
+    "jose": "^5.2.4"
+  },
+  "config": {
+    "jwtAlgorithms": ["RS256", "ES256", "EdDSA"],
+    "sshHostKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCfake"
+  }
+}

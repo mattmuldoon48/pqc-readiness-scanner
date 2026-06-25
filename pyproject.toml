@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pqc-readiness-scanner"
+version = "0.1.0"
+description = "Lightweight PQC readiness scanner for cryptographic inventory."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "PQC Readiness Scanner" }]
+dependencies = [
+  "pydantic>=2.0",
+  "PyYAML>=6.0",
+  "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+pqc-scanner = "pqc_scanner.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pqc_scanner = ["rules/*.yml"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["src"]

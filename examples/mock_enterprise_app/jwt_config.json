@@ -1,0 +1,7 @@
+{
+  "issuer": "https://auth.internal.example",
+  "jwt_algorithm": "ES256",
+  "accepted_algorithms": ["RS256", "ES256", "EdDSA"],
+  "public_jwks_hint": "-----BEGIN PUBLIC KEY----- fake material -----END PUBLIC KEY-----",
+  "x509_url": "https://auth.internal.example/.well-known/x509"
+}

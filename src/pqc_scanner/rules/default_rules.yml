@@ -1,0 +1,137 @@
+rules:
+  - id: rsa_private_key_marker
+    name: RSA private key marker
+    description: Detects PEM markers for RSA private keys.
+    patterns:
+      - '-----BEGIN RSA PRIVATE KEY-----'
+      - '-----BEGIN PRIVATE KEY-----'
+    crypto_family: RSA
+    usage_category: private_key
+    severity: critical
+    confidence: high
+    reason: Private RSA keys are directly impacted by cryptographically relevant quantum computers and are high-value migration inventory.
+    recommendation: Locate the owning service, rotate exposed sample material if needed, and plan migration to approved PQC or hybrid key establishment/signature approaches.
+    file_globs: ['**/*']
+
+  - id: rsa_public_key_marker
+    name: RSA public key marker
+    description: Detects PEM markers for RSA public keys.
+    patterns:
+      - '-----BEGIN RSA PUBLIC KEY-----'
+      - '-----BEGIN PUBLIC KEY-----'
+    crypto_family: RSA
+    usage_category: public_key
+    severity: medium
+    confidence: medium
+    reason: Public key material helps inventory RSA trust anchors and integration points.
+    recommendation: Confirm algorithm and owner; include the trust chain in PQC migration planning.
+    file_globs: ['**/*']
+
+  - id: rsa_tls_cert_config
+    name: RSA in TLS or certificate configuration
+    description: Detects RSA references in TLS, SSL, certificate, and cipher configuration.
+    patterns:
+      - '\b(ECDHE[-_])?RSA\b'
+      - '\bsha(256|384|512)WithRSAEncryption\b'
+      - '\brsa_(certificate|private_key|key|cert)\b'
+    crypto_family: RSA
+    usage_category: tls_certificate
+    severity: high
+    confidence: high
+    reason: TLS certificates and RSA-authenticated ciphersuites are priority assets for PQC transition planning.
+    recommendation: Inventory certificate issuers, validity windows, renewal automation, and hybrid/PQC certificate roadmap.
+    file_globs: ['**/*.conf', '**/*.cnf', '**/*.pem', '**/*.crt', '**/*.tf', '**/*.yaml', '**/*.yml', '**/*.json', '**/*.py']
+
+  - id: ecc_ecdsa_ecdh_reference
+    name: ECC ECDSA ECDH reference
+    description: Detects elliptic-curve algorithms and curve names used for signatures or key agreement.
+    patterns:
+      - '\b(ECDSA|ECDH|ECC|elliptic[- ]curve)\b'
+      - '\b(secp256r1|prime256v1|P-256|secp384r1|P-384|P256|P384|nistp256|nistp384)\b'
+    crypto_family: ECC
+    usage_category: signing_key_agreement
+    severity: high
+    confidence: high
+    reason: ECC signatures and ECDH key agreement are quantum-vulnerable public-key cryptography.
+    recommendation: Identify protocol owners and track standards-approved PQC or hybrid replacements for signing and key agreement.
+    file_globs: ['**/*']
+
+  - id: ed25519_eddsa_reference
+    name: Ed25519 or EdDSA reference
+    description: Detects Ed25519 and EdDSA signing references.
+    patterns:
+      - '\b(Ed25519|EdDSA|ssh-ed25519)\b'
+    crypto_family: EdDSA
+    usage_category: signing
+    severity: high
+    confidence: high
+    reason: EdDSA/Ed25519 are modern classical signature schemes but still not post-quantum secure.
+    recommendation: Inventory signing use and monitor migration paths to approved PQC signatures.
+    file_globs: ['**/*']
+
+  - id: openssl_usage
+    name: OpenSSL dependency or configuration usage
+    description: Detects OpenSSL libraries, commands, and dependency names.
+    patterns:
+      - '\b(OpenSSL|openssl|pyOpenSSL|node-forge)\b'
+    crypto_family: OpenSSL
+    usage_category: dependency
+    severity: medium
+    confidence: medium
+    reason: OpenSSL-backed cryptography needs inventory to understand enabled algorithms and upgrade paths.
+    recommendation: Pin supported versions, enumerate enabled algorithms, and verify PQC/hybrid support plans for dependent services.
+    file_globs: ['**/*']
+
+  - id: jwt_classical_algorithms
+    name: JWT classical public-key algorithms
+    description: Detects JWT algorithms that rely on RSA, ECDSA, or EdDSA signatures.
+    patterns:
+      - '\b(RS256|RS384|RS512|ES256|ES384|ES512|EdDSA)\b'
+      - 'jwt_algorithm'
+    crypto_family: JWT public-key signatures
+    usage_category: jwt_signing
+    severity: high
+    confidence: high
+    reason: JWT signing algorithms protect authentication and authorization tokens and are high-priority migration inventory.
+    recommendation: Identify issuers, verifiers, key rotation flows, and standards-compatible PQC or hybrid token signing options.
+    file_globs: ['**/*.json', '**/*.yaml', '**/*.yml', '**/*.py', '**/*.js', '**/*.ts', '**/*.md']
+
+  - id: ssh_classical_key_reference
+    name: SSH classical key reference
+    description: Detects SSH RSA and ECDSA key algorithm references.
+    patterns:
+      - '\b(ssh-rsa|rsa-sha2-256|rsa-sha2-512|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdh-sha2-nistp256)\b'
+    crypto_family: SSH public-key cryptography
+    usage_category: ssh
+    severity: high
+    confidence: high
+    reason: SSH host and user keys are authentication assets that may need algorithm migration.
+    recommendation: Inventory host/user key locations, rotate away from legacy algorithms where possible, and track PQC SSH support.
+    file_globs: ['**/*']
+
+  - id: x509_certificate_reference
+    name: X.509 certificate reference
+    description: Detects certificate and X.509 references that may indicate public-key trust chains.
+    patterns:
+      - '\b(x509|X\.509|certificate|certificates|cert_pem|ssl_certificate|trusted_ca)\b'
+    crypto_family: X.509 certificates
+    usage_category: certificate
+    severity: medium
+    confidence: medium
+    reason: X.509 trust chains often contain RSA or ECC keys and need inventory for PQC migration.
+    recommendation: Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation.
+    file_globs: ['**/*']
+
+  - id: rsa_api_usage
+    name: RSA API usage
+    description: Detects code-level RSA key generation, loading, or algorithm references.
+    patterns:
+      - '\b(generate_private_key|RSA\.generate|rsa\.GenerateKey|rsa_private_key|RSAPrivateKey|RSAPublicKey)\b'
+      - '\brsa_padding\b'
+    crypto_family: RSA
+    usage_category: application_crypto
+    severity: high
+    confidence: high
+    reason: Application-level RSA code is a direct migration and ownership target.
+    recommendation: Review code owner, purpose, key size, data lifetime, and migration path to approved PQC/hybrid primitives.
+    file_globs: ['**/*.py', '**/*.js', '**/*.ts', '**/*.go', '**/*.java', '**/*.tf', '**/*.json', '**/*.yaml', '**/*.yml']
