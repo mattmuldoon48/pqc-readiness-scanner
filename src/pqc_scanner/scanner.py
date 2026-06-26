@@ -8,12 +8,19 @@ from pathlib import Path
 from .models import Finding, ScanResult, ScanSummary, ScanWarning, path_for_report
 from .rules import default_rules_path, load_rules
 from .scoring import score_finding
+from .suppressions import is_suppressed, load_suppressions
 
 SKIP_DIRS = {".git", ".hg", ".svn", "__pycache__", ".pytest_cache", ".mypy_cache", "node_modules", "dist", "build"}
+SKIP_FILES = {".pqc-scanner-ignore.yml", ".pqc-scanner-ignore.yaml"}
 MAX_FILE_BYTES = 2_000_000
 
 
-def scan_path(target_path: Path, output_dir: Path | None = None, rules_path: Path | None = None) -> ScanResult:
+def scan_path(
+    target_path: Path,
+    output_dir: Path | None = None,
+    rules_path: Path | None = None,
+    suppressions_path: Path | None = None,
+) -> ScanResult:
     target = Path(target_path).resolve()
     if not target.exists():
         raise FileNotFoundError(f"Target path does not exist: {target_path}")
@@ -21,6 +28,7 @@ def scan_path(target_path: Path, output_dir: Path | None = None, rules_path: Pat
         raise NotADirectoryError(f"Target path is not a directory: {target_path}")
 
     rules = load_rules(rules_path)
+    suppressions = load_suppressions(suppressions_path)
     compiled = [
         (rule, [re.compile(pattern, 0 if rule.case_sensitive else re.IGNORECASE) for pattern in rule.patterns])
         for rule in rules
@@ -68,23 +76,23 @@ def scan_path(target_path: Path, output_dir: Path | None = None, rules_path: Pat
                             continue
                         seen.add(key)
                         risk_score, risk_level = score_finding(rule, relative_path, snippet)
-                        findings.append(
-                            Finding(
-                                rule_id=rule.id,
-                                rule_name=rule.name,
-                                file_path=rel_report,
-                                line_number=line_number,
-                                matched_text=snippet,
-                                crypto_family=rule.crypto_family,
-                                usage_category=rule.usage_category,
-                                severity=rule.severity,
-                                confidence=rule.confidence,
-                                reason=rule.reason,
-                                recommendation=rule.recommendation,
-                                risk_score=risk_score,
-                                risk_level=risk_level,
-                            )
+                        finding = Finding(
+                            rule_id=rule.id,
+                            rule_name=rule.name,
+                            file_path=rel_report,
+                            line_number=line_number,
+                            matched_text=snippet,
+                            crypto_family=rule.crypto_family,
+                            usage_category=rule.usage_category,
+                            severity=rule.severity,
+                            confidence=rule.confidence,
+                            reason=rule.reason,
+                            recommendation=rule.recommendation,
+                            risk_score=risk_score,
+                            risk_level=risk_level,
                         )
+                        if not is_suppressed(finding, suppressions):
+                            findings.append(finding)
 
     findings.sort(key=lambda finding: (finding.file_path, finding.line_number, finding.rule_id, finding.matched_text))
     return ScanResult(
@@ -99,7 +107,7 @@ def scan_path(target_path: Path, output_dir: Path | None = None, rules_path: Pat
 
 def iter_files(root: Path):
     for path in sorted(root.rglob("*"), key=lambda p: p.as_posix()):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if any(part in SKIP_DIRS for part in path.parts) or path.name in SKIP_FILES:
             continue
         if path.is_file() and not path.is_symlink():
             yield path

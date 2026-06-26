@@ -37,22 +37,34 @@ python -m pip install -e ".[dev]"
 python -m pqc_scanner scan examples/mock_enterprise_app --out reports/mock_enterprise_app
 ```
 
+With suppressions and baseline comparison:
+
+```bash
+python -m pqc_scanner scan examples/mock_enterprise_app \
+  --out reports/mock_enterprise_app \
+  --suppressions examples/mock_enterprise_app/.pqc-scanner-ignore.yml \
+  --baseline reports/previous/crypto_inventory.json
+```
+
 Generated files:
 
 - `crypto_inventory.json` — machine-readable inventory and summary
 - `pqc_readiness_report.md` — human-readable readiness report
 - `risk_summary.csv` — spreadsheet-friendly finding list
+- `pqc_findings.sarif` — SARIF output for security tooling and code scanning workflows
+- `baseline_diff.json` — new/resolved/unchanged finding comparison when `--baseline` is provided
 
 ## Sample output
 
 ```text
 PQC Readiness Scan Complete
 Files scanned: 7
-Findings: 20+
+Findings: 39
 Highest risk: 100
 json: reports/mock_enterprise_app/crypto_inventory.json
 markdown: reports/mock_enterprise_app/pqc_readiness_report.md
 csv: reports/mock_enterprise_app/risk_summary.csv
+sarif: reports/mock_enterprise_app/pqc_findings.sarif
 ```
 
 A Markdown finding row looks like:
@@ -71,6 +83,20 @@ Risk scoring is intentionally simple and explainable:
 
 Scores help triage inventory review; they are not cryptographic proof of exploitability.
 
+## Suppressions and baselines
+
+Suppression files are YAML documents with explicit reasons:
+
+```yaml
+suppressions:
+  - rule_id: x509_certificate_reference
+    file_path: README.md
+    reason: Documentation-only mention in mock app README.
+```
+
+Baseline mode compares the current scan to a previous `crypto_inventory.json` and writes `baseline_diff.json` with new, resolved, and unchanged findings.
+
+
 ## Limitations and honesty
 
 - Not a production cryptographic audit.
@@ -85,11 +111,17 @@ Use the output to start conversations with service owners, PKI teams, platform t
 
 ## Roadmap
 
-- Add SARIF output for GitHub code scanning integration.
+Completed:
+
+- SARIF output for security tooling integration.
+- Allowlist/suppression support for accepted findings.
+- Baseline/diff mode to compare scans over time.
+- GitHub Actions CI.
+
+Future:
+
 - Add configurable severity and risk-scoring weights.
-- Add allowlist/suppression support for accepted findings.
 - Add file-type-aware scanners for Terraform, Nginx, Python, and package manifests.
-- Add baseline/diff mode to compare scans over time.
 - Add owner/team metadata mapping for findings.
 - Add a Docker image for repeatable CLI runs.
 

@@ -1,0 +1,4 @@
+suppressions:
+  - rule_id: x509_certificate_reference
+    file_path: README.md
+    reason: Documentation-only mention in mock app README.

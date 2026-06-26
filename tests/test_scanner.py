@@ -46,6 +46,15 @@ def test_scoring_prioritizes_private_keys_over_readme_mentions():
     assert readme.risk_score < private_key.risk_score
 
 
+def test_suppressions_remove_matching_findings():
+    unsuppressed = scan_path(EXAMPLE)
+    suppressed = scan_path(EXAMPLE, suppressions_path=EXAMPLE / ".pqc-scanner-ignore.yml")
+
+    assert any(item.file_path == "README.md" and item.rule_id == "x509_certificate_reference" for item in unsuppressed.findings)
+    assert not any(item.file_path == "README.md" and item.rule_id == "x509_certificate_reference" for item in suppressed.findings)
+    assert suppressed.summary.total_findings < unsuppressed.summary.total_findings
+
+
 def test_empty_directory_generates_zero_findings(tmp_path: Path):
     result = scan_path(tmp_path)
     assert result.files_scanned == 0

@@ -32,51 +32,6 @@
       "usage_category": "ssh"
     },
     {
-      "confidence": "medium",
-      "crypto_family": "X.509 certificates",
-      "file_path": "README.md",
-      "line_number": 4,
-      "matched_text": "certificate",
-      "reason": "X.509 trust chains often contain RSA or ECC keys and need inventory for PQC migration.",
-      "recommendation": "Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation.",
-      "risk_level": "medium",
-      "risk_score": 40,
-      "rule_id": "x509_certificate_reference",
-      "rule_name": "X.509 certificate reference",
-      "severity": "medium",
-      "usage_category": "certificate"
-    },
-    {
-      "confidence": "medium",
-      "crypto_family": "X.509 certificates",
-      "file_path": "README.md",
-      "line_number": 4,
-      "matched_text": "certificates",
-      "reason": "X.509 trust chains often contain RSA or ECC keys and need inventory for PQC migration.",
-      "recommendation": "Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation.",
-      "risk_level": "medium",
-      "risk_score": 40,
-      "rule_id": "x509_certificate_reference",
-      "rule_name": "X.509 certificate reference",
-      "severity": "medium",
-      "usage_category": "certificate"
-    },
-    {
-      "confidence": "medium",
-      "crypto_family": "X.509 certificates",
-      "file_path": "README.md",
-      "line_number": 4,
-      "matched_text": "x509",
-      "reason": "X.509 trust chains often contain RSA or ECC keys and need inventory for PQC migration.",
-      "recommendation": "Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation.",
-      "risk_level": "medium",
-      "risk_score": 40,
-      "rule_id": "x509_certificate_reference",
-      "rule_name": "X.509 certificate reference",
-      "severity": "medium",
-      "usage_category": "certificate"
-    },
-    {
       "confidence": "high",
       "crypto_family": "RSA",
       "file_path": "auth_service.py",
@@ -587,10 +542,10 @@
       "usage_category": "certificate"
     }
   ],
-  "generated_at": "2026-06-25T16:10:36.530289+00:00",
+  "generated_at": "2026-06-26T03:54:03.588856+00:00",
   "rules_path": "/Users/matthewmuldoon/Desktop/resume projects/pqc-readiness-scanner/src/pqc_scanner/rules/default_rules.yml",
   "summary": {
-    "average_risk_score": 79.9,
+    "average_risk_score": 83.22,
     "by_crypto_family": {
       "ECC": 5,
       "EdDSA": 2,
@@ -598,16 +553,16 @@
       "OpenSSL": 2,
       "RSA": 10,
       "SSH public-key cryptography": 2,
-      "X.509 certificates": 7
+      "X.509 certificates": 4
     },
     "by_severity": {
       "critical": 1,
       "high": 28,
-      "medium": 10
+      "medium": 7
     },
     "by_usage_category": {
       "application_crypto": 1,
-      "certificate": 7,
+      "certificate": 4,
       "dependency": 2,
       "jwt_signing": 11,
       "private_key": 1,
@@ -618,7 +573,7 @@
       "tls_certificate": 7
     },
     "highest_risk_score": 100,
-    "total_findings": 39
+    "total_findings": 36
   },
   "target_path": "/Users/matthewmuldoon/Desktop/resume projects/pqc-readiness-scanner/examples/mock_enterprise_app",
   "tool": "pqc-readiness-scanner",

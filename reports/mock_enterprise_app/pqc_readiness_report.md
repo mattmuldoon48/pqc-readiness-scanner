@@ -7,9 +7,9 @@ It is a lightweight discovery aid, not a production cryptographic audit and not 
 
 - Target: `/Users/matthewmuldoon/Desktop/resume projects/pqc-readiness-scanner/examples/mock_enterprise_app`
 - Files scanned: 7
-- Total findings: 39
+- Total findings: 36
 - Highest risk score: 100
-- Average risk score: 79.9
+- Average risk score: 83.22
 
 ### Counts by Severity
 
@@ -17,7 +17,7 @@ It is a lightweight discovery aid, not a production cryptographic audit and not 
 | --- | ---: |
 | critical | 1 |
 | high | 28 |
-| medium | 10 |
+| medium | 7 |
 | low | 0 |
 
 ### Counts by Crypto Family
@@ -30,7 +30,7 @@ It is a lightweight discovery aid, not a production cryptographic audit and not 
 | OpenSSL | 2 |
 | RSA | 10 |
 | SSH public-key cryptography | 2 |
-| X.509 certificates | 7 |
+| X.509 certificates | 4 |
 
 ## Findings
 
@@ -38,9 +38,6 @@ It is a lightweight discovery aid, not a production cryptographic audit and not 
 | ---: | --- | --- | --- | --- | --- | --- | --- |
 | 50 | high | ecc_ecdsa_ecdh_reference | README.md:4 | ECC | signing_key_agreement | `ECDSA` | Identify protocol owners and track standards-approved PQC or hybrid replacements for signing and key agreement. |
 | 57 | high | ssh_classical_key_reference | README.md:4 | SSH public-key cryptography | ssh | `ssh-rsa` | Inventory host/user key locations, rotate away from legacy algorithms where possible, and track PQC SSH support. |
-| 40 | medium | x509_certificate_reference | README.md:4 | X.509 certificates | certificate | `certificate` | Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation. |
-| 40 | medium | x509_certificate_reference | README.md:4 | X.509 certificates | certificate | `certificates` | Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation. |
-| 40 | medium | x509_certificate_reference | README.md:4 | X.509 certificates | certificate | `x509` | Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation. |
 | 95 | high | rsa_tls_cert_config | auth_service.py:4 | RSA | tls_certificate | `rsa` | Inventory certificate issuers, validity windows, renewal automation, and hybrid/PQC certificate roadmap. |
 | 100 | high | jwt_classical_algorithms | auth_service.py:6 | JWT public-key signatures | jwt_signing | `JWT_ALGORITHM` | Identify issuers, verifiers, key rotation flows, and standards-compatible PQC or hybrid token signing options. |
 | 100 | high | jwt_classical_algorithms | auth_service.py:6 | JWT public-key signatures | jwt_signing | `RS256` | Identify issuers, verifiers, key rotation flows, and standards-compatible PQC or hybrid token signing options. |
@@ -75,6 +72,13 @@ It is a lightweight discovery aid, not a production cryptographic audit and not 
 | 95 | high | rsa_tls_cert_config | terraform.tf:13 | RSA | tls_certificate | `rsa` | Inventory certificate issuers, validity windows, renewal automation, and hybrid/PQC certificate roadmap. |
 | 70 | medium | x509_certificate_reference | terraform.tf:14 | X.509 certificates | certificate | `certificates` | Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation. |
 | 70 | medium | x509_certificate_reference | terraform.tf:15 | X.509 certificates | certificate | `certificates` | Map issuing CA, certificate profile, key algorithm, consumers, and renewal automation. |
+
+## Baseline Diff
+
+- Baseline: `reports/mock_enterprise_app/crypto_inventory.json`
+- New findings: 0
+- Resolved findings: 3
+- Unchanged findings: 36
 
 ## Migration Readiness Notes
 

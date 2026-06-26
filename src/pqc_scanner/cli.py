@@ -6,6 +6,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
+from .baseline import BaselineLoadError
 from .reports import write_reports
 from .rules import RuleLoadError
 from .scanner import scan_path
@@ -20,6 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("target_path", type=Path, help="folder to scan")
     scan.add_argument("--out", required=True, type=Path, dest="output_dir", help="directory for generated reports")
     scan.add_argument("--rules", type=Path, default=None, help="optional YAML rules file")
+    scan.add_argument("--suppressions", type=Path, default=None, help="optional YAML suppressions file")
+    scan.add_argument("--baseline", type=Path, default=None, help="previous crypto_inventory.json for diff output")
     return parser
 
 
@@ -27,17 +30,28 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command == "scan":
-        return run_scan(args.target_path, args.output_dir, args.rules)
+        return run_scan(args.target_path, args.output_dir, args.rules, args.suppressions, args.baseline)
     parser.error("unknown command")
     return 2
 
 
-def run_scan(target_path: Path, output_dir: Path, rules_path: Path | None = None) -> int:
+def run_scan(
+    target_path: Path,
+    output_dir: Path,
+    rules_path: Path | None = None,
+    suppressions_path: Path | None = None,
+    baseline_path: Path | None = None,
+) -> int:
     try:
         with console.status("Scanning for cryptographic indicators..."):
-            result = scan_path(target_path, output_dir=output_dir, rules_path=rules_path)
-            paths = write_reports(result, output_dir)
-    except (FileNotFoundError, NotADirectoryError, RuleLoadError, OSError, ValueError) as exc:
+            result = scan_path(
+                target_path,
+                output_dir=output_dir,
+                rules_path=rules_path,
+                suppressions_path=suppressions_path,
+            )
+            paths = write_reports(result, output_dir, baseline_path=baseline_path)
+    except (FileNotFoundError, NotADirectoryError, RuleLoadError, BaselineLoadError, OSError, ValueError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         return 1
 

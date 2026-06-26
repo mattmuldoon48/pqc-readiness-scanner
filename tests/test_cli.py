@@ -28,6 +28,7 @@ def test_python_module_cli_scan_generates_reports(tmp_path: Path):
     assert (tmp_path / "crypto_inventory.json").exists()
     assert (tmp_path / "pqc_readiness_report.md").exists()
     assert (tmp_path / "risk_summary.csv").exists()
+    assert (tmp_path / "pqc_findings.sarif").exists()
 
     inventory = json.loads((tmp_path / "crypto_inventory.json").read_text(encoding="utf-8"))
     assert inventory["summary"]["total_findings"] > 0

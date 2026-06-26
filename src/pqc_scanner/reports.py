@@ -4,11 +4,15 @@ import csv
 import json
 from pathlib import Path
 
+from .baseline import BaselineDiff, compare_to_baseline
+
 from .models import ScanResult
 
 JSON_NAME = "crypto_inventory.json"
 MARKDOWN_NAME = "pqc_readiness_report.md"
 CSV_NAME = "risk_summary.csv"
+SARIF_NAME = "pqc_findings.sarif"
+BASELINE_DIFF_NAME = "baseline_diff.json"
 
 CSV_FIELDS = [
     "rule_id",
@@ -26,17 +30,24 @@ CSV_FIELDS = [
 ]
 
 
-def write_reports(result: ScanResult, output_dir: Path) -> dict[str, Path]:
+def write_reports(result: ScanResult, output_dir: Path, baseline_path: Path | None = None) -> dict[str, Path]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
+    baseline_diff = compare_to_baseline(result, baseline_path)
     paths = {
         "json": output / JSON_NAME,
         "markdown": output / MARKDOWN_NAME,
         "csv": output / CSV_NAME,
+        "sarif": output / SARIF_NAME,
     }
+    if baseline_diff is not None:
+        paths["baseline_diff"] = output / BASELINE_DIFF_NAME
     paths["json"].write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    paths["markdown"].write_text(render_markdown(result), encoding="utf-8")
+    paths["markdown"].write_text(render_markdown(result, baseline_diff), encoding="utf-8")
     write_csv(result, paths["csv"])
+    paths["sarif"].write_text(json.dumps(render_sarif(result), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if baseline_diff is not None:
+        paths["baseline_diff"].write_text(json.dumps(baseline_diff.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return paths
 
 
@@ -49,7 +60,7 @@ def write_csv(result: ScanResult, path: Path) -> None:
             writer.writerow({field: data[field] for field in CSV_FIELDS})
 
 
-def render_markdown(result: ScanResult) -> str:
+def render_markdown(result: ScanResult, baseline_diff: BaselineDiff | None = None) -> str:
     lines = [
         "# PQC Readiness Report",
         "",
@@ -115,6 +126,17 @@ def render_markdown(result: ScanResult) -> str:
         for warning in result.warnings:
             lines.append(f"- `{escape_md(warning.file_path)}`: {escape_md(warning.message)}")
 
+    if baseline_diff is not None:
+        lines.extend([
+            "",
+            "## Baseline Diff",
+            "",
+            f"- Baseline: `{baseline_diff.baseline_path}`",
+            f"- New findings: {baseline_diff.new_count}",
+            f"- Resolved findings: {baseline_diff.resolved_count}",
+            f"- Unchanged findings: {baseline_diff.unchanged_count}",
+        ])
+
     lines.extend([
         "",
         "## Migration Readiness Notes",
@@ -125,6 +147,74 @@ def render_markdown(result: ScanResult) -> str:
         "",
     ])
     return "\n".join(lines)
+
+
+def render_sarif(result: ScanResult) -> dict[str, object]:
+    rules = {}
+    for finding in result.findings:
+        rules[finding.rule_id] = {
+            "id": finding.rule_id,
+            "name": finding.rule_name,
+            "shortDescription": {"text": finding.reason},
+            "fullDescription": {"text": finding.recommendation},
+            "properties": {
+                "crypto_family": finding.crypto_family,
+                "usage_category": finding.usage_category,
+                "severity": finding.severity,
+                "confidence": finding.confidence,
+            },
+        }
+
+    return {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "pqc-readiness-scanner",
+                        "informationUri": "https://github.com/mattmuldoon48/pqc-readiness-scanner",
+                        "rules": [rules[key] for key in sorted(rules)],
+                    }
+                },
+                "results": [sarif_result(finding) for finding in result.findings],
+            }
+        ],
+    }
+
+
+def sarif_result(finding) -> dict[str, object]:
+    return {
+        "ruleId": finding.rule_id,
+        "level": sarif_level(finding.severity),
+        "message": {
+            "text": f"{finding.crypto_family} {finding.usage_category}: {finding.matched_text}. {finding.recommendation}"
+        },
+        "locations": [
+            {
+                "physicalLocation": {
+                    "artifactLocation": {"uri": finding.file_path},
+                    "region": {
+                        "startLine": finding.line_number,
+                        "snippet": {"text": finding.matched_text},
+                    },
+                }
+            }
+        ],
+        "properties": {
+            "risk_score": finding.risk_score,
+            "risk_level": finding.risk_level,
+            "confidence": finding.confidence,
+        },
+    }
+
+
+def sarif_level(severity: str) -> str:
+    if severity in {"critical", "high"}:
+        return "error"
+    if severity == "medium":
+        return "warning"
+    return "note"
 
 
 def escape_md(value: object) -> str:
