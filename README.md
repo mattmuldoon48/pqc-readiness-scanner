@@ -83,6 +83,16 @@ Scores help triage inventory review; they are not cryptographic proof of exploit
 
 Use the output to start conversations with service owners, PKI teams, platform teams, and application security reviewers.
 
+## Roadmap
+
+- Add SARIF output for GitHub code scanning integration.
+- Add configurable severity and risk-scoring weights.
+- Add allowlist/suppression support for accepted findings.
+- Add file-type-aware scanners for Terraform, Nginx, Python, and package manifests.
+- Add baseline/diff mode to compare scans over time.
+- Add owner/team metadata mapping for findings.
+- Add a Docker image for repeatable CLI runs.
+
 ## Development
 
 ```bash
