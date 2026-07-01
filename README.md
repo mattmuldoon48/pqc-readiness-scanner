@@ -100,6 +100,8 @@ Suppressions should be narrow and reviewable: match on `rule_id`, `file_path`, o
 
 Baseline mode compares the current scan to a previous `crypto_inventory.json` and writes `baseline_diff.json` with new, resolved, and unchanged findings.
 
+Use baseline diffs for review workflow changes: new findings need owner triage, resolved findings need confirmation that crypto was removed rather than renamed, and unchanged findings should keep their existing migration owner or suppression decision.
+
 
 ## Limitations and honesty
 
