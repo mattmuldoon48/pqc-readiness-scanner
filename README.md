@@ -96,6 +96,8 @@ suppressions:
     reason: Documentation-only mention in mock app README.
 ```
 
+Suppressions should be narrow and reviewable: match on `rule_id`, `file_path`, or `matched_text`, and keep the required reason specific enough for a later reviewer to decide whether the exception still applies.
+
 Baseline mode compares the current scan to a previous `crypto_inventory.json` and writes `baseline_diff.json` with new, resolved, and unchanged findings.
 
 
