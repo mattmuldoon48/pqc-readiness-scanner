@@ -54,6 +54,8 @@ Generated files:
 - `pqc_findings.sarif` — SARIF output for security tooling and code scanning workflows
 - `baseline_diff.json` — new/resolved/unchanged finding comparison when `--baseline` is provided
 
+Use `crypto_inventory.json` as the source of truth for automation, `pqc_readiness_report.md` for reviewer handoff, `risk_summary.csv` for sorting and owner triage, and SARIF for code-scanning integrations.
+
 ## Sample output
 
 ```text
