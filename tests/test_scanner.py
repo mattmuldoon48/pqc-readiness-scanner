@@ -46,6 +46,26 @@ def test_scoring_prioritizes_private_keys_over_readme_mentions():
     assert readme.risk_score < private_key.risk_score
 
 
+def test_generic_pem_containers_do_not_assume_rsa(tmp_path: Path):
+    (tmp_path / "keys.pem").write_text(
+        "-----BEGIN RSA PRIVATE KEY-----\n"
+        "-----BEGIN PRIVATE KEY-----\n"
+        "-----BEGIN RSA PUBLIC KEY-----\n"
+        "-----BEGIN PUBLIC KEY-----\n",
+        encoding="utf-8",
+    )
+
+    result = scan_path(tmp_path)
+    by_marker = {finding.matched_text: finding for finding in result.findings}
+
+    assert by_marker["-----BEGIN RSA PRIVATE KEY-----"].rule_id == "rsa_private_key_marker"
+    assert by_marker["-----BEGIN RSA PUBLIC KEY-----"].rule_id == "rsa_public_key_marker"
+    assert by_marker["-----BEGIN PRIVATE KEY-----"].rule_id == "generic_private_key_marker"
+    assert by_marker["-----BEGIN PUBLIC KEY-----"].rule_id == "generic_public_key_marker"
+    assert by_marker["-----BEGIN PRIVATE KEY-----"].crypto_family == "Unidentified PEM key algorithm"
+    assert by_marker["-----BEGIN PUBLIC KEY-----"].crypto_family == "Unidentified PEM key algorithm"
+
+
 def test_suppressions_remove_matching_findings():
     unsuppressed = scan_path(EXAMPLE)
     suppressed = scan_path(EXAMPLE, suppressions_path=EXAMPLE / ".pqc-scanner-ignore.yml")

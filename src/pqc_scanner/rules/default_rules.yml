@@ -4,7 +4,6 @@ rules:
     description: Detects PEM markers for RSA private keys.
     patterns:
       - '-----BEGIN RSA PRIVATE KEY-----'
-      - '-----BEGIN PRIVATE KEY-----'
     crypto_family: RSA
     usage_category: private_key
     severity: critical
@@ -18,7 +17,6 @@ rules:
     description: Detects PEM markers for RSA public keys.
     patterns:
       - '-----BEGIN RSA PUBLIC KEY-----'
-      - '-----BEGIN PUBLIC KEY-----'
     crypto_family: RSA
     usage_category: public_key
     severity: medium
@@ -26,6 +24,33 @@ rules:
     reason: Public key material helps inventory RSA trust anchors and integration points.
     recommendation: Confirm algorithm and owner; include the trust chain in PQC migration planning.
     file_globs: ['**/*']
+
+  - id: generic_private_key_marker
+    name: Algorithm-unidentified private key marker
+    description: Detects generic PKCS#8 PEM private-key containers without assuming the key algorithm.
+    patterns:
+      - '-----BEGIN PRIVATE KEY-----'
+    crypto_family: Unidentified PEM key algorithm
+    usage_category: private_key
+    severity: high
+    confidence: medium
+    reason: A generic PKCS#8 container identifies private key material but does not establish whether the key is RSA, ECC, or another algorithm.
+    recommendation: Inspect the key algorithm and owner before assigning migration priority; rotate exposed sample material if needed.
+    file_globs: ['**/*']
+
+  - id: generic_public_key_marker
+    name: Algorithm-unidentified public key marker
+    description: Detects generic SubjectPublicKeyInfo PEM containers without assuming the key algorithm.
+    patterns:
+      - '-----BEGIN PUBLIC KEY-----'
+    crypto_family: Unidentified PEM key algorithm
+    usage_category: public_key
+    severity: medium
+    confidence: medium
+    reason: A generic public-key container identifies an inventory point but does not establish whether the key is RSA, ECC, or another algorithm.
+    recommendation: Inspect the encoded algorithm and owning trust relationship before assigning migration priority.
+    file_globs: ['**/*']
+
 
   - id: rsa_tls_cert_config
     name: RSA in TLS or certificate configuration
