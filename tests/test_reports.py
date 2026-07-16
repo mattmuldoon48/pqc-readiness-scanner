@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from pqc_scanner.baseline import BaselineLoadError, load_baseline_findings
+from pqc_scanner.baseline import (
+    BaselineLoadError,
+    compare_to_baseline,
+    finding_fingerprint,
+    load_baseline_findings,
+)
 from pqc_scanner.reports import BASELINE_DIFF_NAME, CSV_NAME, JSON_NAME, MARKDOWN_NAME, SARIF_NAME, write_reports
 from pqc_scanner.scanner import scan_path
 
@@ -65,7 +70,7 @@ def test_baseline_diff_report_identifies_new_and_resolved_findings(tmp_path: Pat
 
     changed_app = tmp_path / "changed_app"
     changed_app.mkdir()
-    (changed_app / "jwt_config.json").write_text('{"jwt_algorithm": "RS256"}', encoding="utf-8")
+    (changed_app / "new_jwt_config.json").write_text('{"jwt_algorithm": "RS256"}', encoding="utf-8")
     current_result = scan_path(changed_app)
     current_paths = write_reports(current_result, tmp_path / "current", baseline_path=baseline_paths["json"])
 
@@ -131,3 +136,68 @@ def test_baseline_loader_rejects_invalid_finding_fields(tmp_path: Path, field: s
     message = str(error.value)
     assert "index 0" in message
     assert field in message
+
+
+def _compare_occurrence_lines(tmp_path: Path, previous_lines: list[int], current_lines: list[int]):
+    scanned = scan_path(Path("examples/mock_enterprise_app"))
+    template = scanned.findings[0]
+    previous_findings = [template.model_copy(update={"line_number": line}) for line in previous_lines]
+    current_findings = [template.model_copy(update={"line_number": line}) for line in current_lines]
+    baseline_path = tmp_path / "baseline.json"
+    baseline_path.write_text(
+        json.dumps({"findings": [finding.model_dump() for finding in previous_findings]}),
+        encoding="utf-8",
+    )
+    current = scanned.model_copy(update={"findings": current_findings})
+
+    diff = compare_to_baseline(current, baseline_path)
+
+    assert diff is not None
+    return diff, current_findings
+
+
+def test_baseline_diff_treats_line_movement_as_unchanged(tmp_path: Path):
+    diff, current = _compare_occurrence_lines(tmp_path, [10], [25])
+
+    assert diff.new_count == 0
+    assert diff.resolved_count == 0
+    assert diff.unchanged_count == 1
+    assert diff.unchanged_fingerprints == [finding_fingerprint(current[0])]
+
+
+def test_baseline_diff_preserves_two_moved_duplicate_occurrences(tmp_path: Path):
+    diff, current = _compare_occurrence_lines(tmp_path, [20, 10], [40, 30])
+
+    assert diff.new_findings == []
+    assert diff.resolved_findings == []
+    assert diff.unchanged_count == 2
+    assert diff.unchanged_fingerprints == [
+        finding_fingerprint(current[1]),
+        finding_fingerprint(current[0]),
+    ]
+
+
+def test_baseline_diff_reports_surplus_when_occurrences_grow_from_two_to_three(tmp_path: Path):
+    diff, current = _compare_occurrence_lines(tmp_path, [10, 20], [20, 30, 40])
+
+    assert diff.new_count == 1
+    assert diff.resolved_count == 0
+    assert diff.unchanged_count == 2
+    assert [finding["line_number"] for finding in diff.new_findings] == [40]
+    assert diff.unchanged_fingerprints == [
+        finding_fingerprint(current[0]),
+        finding_fingerprint(current[1]),
+    ]
+
+
+def test_baseline_diff_reports_surplus_when_occurrences_shrink_from_three_to_two(tmp_path: Path):
+    diff, current = _compare_occurrence_lines(tmp_path, [30, 10, 20], [40, 20])
+
+    assert diff.new_count == 0
+    assert diff.resolved_count == 1
+    assert diff.unchanged_count == 2
+    assert [finding["line_number"] for finding in diff.resolved_findings] == [30]
+    assert diff.unchanged_fingerprints == [
+        finding_fingerprint(current[1]),
+        finding_fingerprint(current[0]),
+    ]

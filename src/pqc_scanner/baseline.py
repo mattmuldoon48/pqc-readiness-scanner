@@ -68,23 +68,74 @@ def compare_to_baseline(result: ScanResult, baseline_path: Path | None) -> Basel
     if baseline_path is None:
         return None
     previous = load_baseline_findings(baseline_path)
-    current_by_fp = {finding_fingerprint(finding): finding for finding in result.findings}
-    previous_by_fp = {finding_fingerprint(finding): finding for finding in previous}
 
-    current_keys = set(current_by_fp)
-    previous_keys = set(previous_by_fp)
-    new_keys = sorted(current_keys - previous_keys)
-    resolved_keys = sorted(previous_keys - current_keys)
-    unchanged_keys = sorted(current_keys & previous_keys)
+    current_by_identity: dict[tuple[str, str, str], list[Finding]] = {}
+    for finding in result.findings:
+        current_by_identity.setdefault(_stable_identity(finding), []).append(finding)
+
+    previous_by_identity: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for finding in previous:
+        previous_by_identity.setdefault(_stable_identity(finding), []).append(finding)
+
+    new_findings: list[dict[str, Any]] = []
+    resolved_findings: list[dict[str, Any]] = []
+    unchanged_fingerprints: list[str] = []
+
+    for identity in sorted(current_by_identity.keys() | previous_by_identity.keys()):
+        current = sorted(current_by_identity.get(identity, []), key=_finding_sort_key)
+        prior = sorted(previous_by_identity.get(identity, []), key=_finding_sort_key)
+
+        current_by_line: dict[int, list[Finding]] = {}
+        for finding in current:
+            current_by_line.setdefault(finding.line_number, []).append(finding)
+        prior_by_line: dict[int, list[dict[str, Any]]] = {}
+        for finding in prior:
+            prior_by_line.setdefault(int(finding["line_number"]), []).append(finding)
+
+        remaining_current: list[Finding] = []
+        remaining_prior: list[dict[str, Any]] = []
+        for line_number in sorted(current_by_line.keys() | prior_by_line.keys()):
+            current_at_line = current_by_line.get(line_number, [])
+            prior_at_line = prior_by_line.get(line_number, [])
+            exact_count = min(len(current_at_line), len(prior_at_line))
+            unchanged_fingerprints.extend(
+                finding_fingerprint(finding) for finding in current_at_line[:exact_count]
+            )
+            remaining_current.extend(current_at_line[exact_count:])
+            remaining_prior.extend(prior_at_line[exact_count:])
+
+        moved_count = min(len(remaining_current), len(remaining_prior))
+        unchanged_fingerprints.extend(
+            finding_fingerprint(finding) for finding in remaining_current[:moved_count]
+        )
+        new_findings.extend(_finding_dict(finding) for finding in remaining_current[moved_count:])
+        resolved_findings.extend(remaining_prior[moved_count:])
 
     return BaselineDiff(
         baseline_path=str(Path(baseline_path)),
-        new_count=len(new_keys),
-        resolved_count=len(resolved_keys),
-        unchanged_count=len(unchanged_keys),
-        new_findings=[_finding_dict(current_by_fp[key]) for key in new_keys],
-        resolved_findings=[previous_by_fp[key] for key in resolved_keys],
-        unchanged_fingerprints=unchanged_keys,
+        new_count=len(new_findings),
+        resolved_count=len(resolved_findings),
+        unchanged_count=len(unchanged_fingerprints),
+        new_findings=new_findings,
+        resolved_findings=resolved_findings,
+        unchanged_fingerprints=unchanged_fingerprints,
+    )
+
+
+def _stable_identity(finding: Finding | dict[str, Any]) -> tuple[str, str, str]:
+    data = _finding_dict(finding) if isinstance(finding, Finding) else finding
+    return (
+        str(data.get("rule_id", "")),
+        str(data.get("file_path", "")),
+        str(data.get("matched_text", "")),
+    )
+
+
+def _finding_sort_key(finding: Finding | dict[str, Any]) -> tuple[int, str]:
+    data = _finding_dict(finding) if isinstance(finding, Finding) else finding
+    return (
+        int(data["line_number"]),
+        json.dumps(data, sort_keys=True, separators=(",", ":")),
     )
 
 
