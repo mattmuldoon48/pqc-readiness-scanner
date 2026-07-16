@@ -2,6 +2,9 @@ import csv
 import json
 from pathlib import Path
 
+import pytest
+
+from pqc_scanner.baseline import BaselineLoadError, load_baseline_findings
 from pqc_scanner.reports import BASELINE_DIFF_NAME, CSV_NAME, JSON_NAME, MARKDOWN_NAME, SARIF_NAME, write_reports
 from pqc_scanner.scanner import scan_path
 
@@ -73,3 +76,58 @@ def test_baseline_diff_report_identifies_new_and_resolved_findings(tmp_path: Pat
 
     report = current_paths["markdown"].read_text(encoding="utf-8")
     assert "## Baseline Diff" in report
+
+
+def test_baseline_loader_preserves_valid_empty_findings_list(tmp_path: Path):
+    baseline_path = tmp_path / "empty_baseline.json"
+    baseline_path.write_text(json.dumps({"findings": []}), encoding="utf-8")
+
+    assert load_baseline_findings(baseline_path) == []
+
+
+@pytest.mark.parametrize(
+    ("invalid_finding", "expected_context"),
+    [
+        ("not a finding object", "valid dictionary"),
+        ({}, "rule_id"),
+    ],
+)
+def test_baseline_loader_rejects_invalid_entries_atomically(
+    tmp_path: Path, invalid_finding: object, expected_context: str
+):
+    scanner_result = scan_path(Path("examples/mock_enterprise_app"))
+    valid_finding = scanner_result.to_dict()["findings"][0]
+    baseline_path = tmp_path / "invalid_baseline.json"
+    baseline_path.write_text(
+        json.dumps({"findings": [valid_finding, invalid_finding]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(BaselineLoadError) as error:
+        load_baseline_findings(baseline_path)
+
+    assert "index 1" in str(error.value)
+    assert expected_context in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value"),
+    [
+        ("line_number", 0),
+        ("severity", "urgent"),
+        ("risk_score", 101),
+    ],
+)
+def test_baseline_loader_rejects_invalid_finding_fields(tmp_path: Path, field: str, invalid_value: object):
+    scanner_result = scan_path(Path("examples/mock_enterprise_app"))
+    finding = scanner_result.to_dict()["findings"][0]
+    finding[field] = invalid_value
+    baseline_path = tmp_path / "invalid_field_baseline.json"
+    baseline_path.write_text(json.dumps({"findings": [finding]}), encoding="utf-8")
+
+    with pytest.raises(BaselineLoadError) as error:
+        load_baseline_findings(baseline_path)
+
+    message = str(error.value)
+    assert "index 0" in message
+    assert field in message

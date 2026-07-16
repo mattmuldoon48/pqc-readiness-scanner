@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .models import Finding, ScanResult
 
@@ -53,7 +53,15 @@ def load_baseline_findings(path: Path) -> list[dict[str, Any]]:
     findings = raw.get("findings") if isinstance(raw, dict) else None
     if not isinstance(findings, list):
         raise BaselineLoadError("Baseline must be a crypto_inventory.json file with a findings list")
-    return [finding for finding in findings if isinstance(finding, dict)]
+
+    validated: list[dict[str, Any]] = []
+    for index, finding in enumerate(findings):
+        try:
+            validated_finding = Finding.model_validate(finding)
+        except ValidationError as exc:
+            raise BaselineLoadError(f"Invalid baseline finding at index {index}: {exc}") from exc
+        validated.append(validated_finding.model_dump())
+    return validated
 
 
 def compare_to_baseline(result: ScanResult, baseline_path: Path | None) -> BaselineDiff | None:
