@@ -1,6 +1,9 @@
 from pathlib import Path
 
+import pytest
+
 from pqc_scanner.scanner import scan_path
+from pqc_scanner.suppressions import SuppressionLoadError, load_suppressions
 
 EXAMPLE = Path("examples/mock_enterprise_app")
 
@@ -73,6 +76,14 @@ def test_suppressions_remove_matching_findings():
     assert any(item.file_path == "README.md" and item.rule_id == "x509_certificate_reference" for item in unsuppressed.findings)
     assert not any(item.file_path == "README.md" and item.rule_id == "x509_certificate_reference" for item in suppressed.findings)
     assert suppressed.summary.total_findings < unsuppressed.summary.total_findings
+
+
+def test_suppression_entries_must_be_objects(tmp_path: Path):
+    suppressions_path = tmp_path / "suppressions.yml"
+    suppressions_path.write_text("suppressions:\n  - typo\n", encoding="utf-8")
+
+    with pytest.raises(SuppressionLoadError, match="Suppression entry 1 must be an object"):
+        load_suppressions(suppressions_path)
 
 
 def test_empty_directory_generates_zero_findings(tmp_path: Path):

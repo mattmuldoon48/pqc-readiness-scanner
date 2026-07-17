@@ -36,6 +36,10 @@ def load_suppressions(path: Path | None) -> list[Suppression]:
     if not isinstance(raw, dict) or not isinstance(raw.get("suppressions"), list):
         raise SuppressionLoadError("Suppression file must contain a top-level 'suppressions' list")
 
+    for index, item in enumerate(raw["suppressions"], start=1):
+        if not isinstance(item, dict):
+            raise SuppressionLoadError(f"Suppression entry {index} must be an object")
+
     try:
         suppressions = [Suppression(**item) for item in raw["suppressions"]]
     except ValidationError as exc:
