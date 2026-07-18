@@ -91,3 +91,14 @@ def test_empty_directory_generates_zero_findings(tmp_path: Path):
     assert result.files_scanned == 0
     assert result.findings == []
     assert result.summary.total_findings == 0
+
+
+def test_scan_root_named_like_skipped_directory_is_scanned(tmp_path: Path):
+    target = tmp_path / "build"
+    target.mkdir()
+    (target / "crypto.txt").write_text("-----BEGIN RSA PRIVATE KEY-----", encoding="utf-8")
+
+    result = scan_path(target)
+
+    assert result.files_scanned == 1
+    assert any(finding.crypto_family == "RSA" for finding in result.findings)

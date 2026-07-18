@@ -107,7 +107,8 @@ def scan_path(
 
 def iter_files(root: Path):
     for path in sorted(root.rglob("*"), key=lambda p: p.as_posix()):
-        if any(part in SKIP_DIRS for part in path.parts) or path.name in SKIP_FILES:
+        relative_parts = path.relative_to(root).parts
+        if any(part in SKIP_DIRS for part in relative_parts[:-1]) or path.name in SKIP_FILES:
             continue
         if path.is_file() and not path.is_symlink():
             yield path
