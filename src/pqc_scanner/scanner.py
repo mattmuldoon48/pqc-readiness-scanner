@@ -27,6 +27,15 @@ def scan_path(
     if not target.is_dir():
         raise NotADirectoryError(f"Target path is not a directory: {target_path}")
 
+    output_root = Path(output_dir).resolve() if output_dir is not None else None
+    if output_root is not None:
+        try:
+            target.relative_to(output_root)
+        except ValueError:
+            pass
+        else:
+            raise ValueError("Output directory must not be the scan target or an ancestor of it")
+
     rules = load_rules(rules_path)
     suppressions = load_suppressions(suppressions_path)
     compiled = [
@@ -40,9 +49,9 @@ def scan_path(
     files_scanned = 0
 
     for file_path in iter_files(target):
-        if output_dir is not None:
+        if output_root is not None:
             try:
-                file_path.resolve().relative_to(Path(output_dir).resolve())
+                file_path.resolve().relative_to(output_root)
                 continue
             except ValueError:
                 pass

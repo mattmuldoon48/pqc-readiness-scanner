@@ -102,3 +102,16 @@ def test_scan_root_named_like_skipped_directory_is_scanned(tmp_path: Path):
 
     assert result.files_scanned == 1
     assert any(finding.crypto_family == "RSA" for finding in result.findings)
+
+
+@pytest.mark.parametrize("output_location", ["target", "parent"])
+def test_output_directory_must_not_contain_scan_target(tmp_path: Path, output_location: str):
+    target = tmp_path / "target"
+    target.mkdir()
+    output_dir = target if output_location == "target" else tmp_path
+
+    with pytest.raises(
+        ValueError,
+        match="Output directory must not be the scan target or an ancestor of it",
+    ):
+        scan_path(target, output_dir=output_dir)
