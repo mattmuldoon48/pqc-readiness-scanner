@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 Severity = Literal["low", "medium", "high", "critical"]
@@ -12,6 +12,8 @@ Confidence = Literal["low", "medium", "high"]
 
 
 class Rule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     description: str = Field(..., min_length=1)

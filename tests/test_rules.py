@@ -48,3 +48,27 @@ rules:
     )
     with pytest.raises(RuleLoadError):
         load_rules(bad_rules)
+
+
+def test_unknown_rule_fields_are_rejected(tmp_path: Path):
+    bad_rules = tmp_path / "unknown_field.yml"
+    bad_rules.write_text(
+        """
+rules:
+  - id: misspelled_option
+    name: Misspelled Option
+    description: rule with a misspelled case sensitivity option
+    patterns: ['RSA']
+    crypto_family: RSA
+    usage_category: signing
+    severity: high
+    confidence: high
+    reason: inventory
+    recommendation: review
+    case_sensitiv: true
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuleLoadError, match="case_sensitiv"):
+        load_rules(bad_rules)
