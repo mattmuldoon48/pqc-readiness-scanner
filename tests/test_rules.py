@@ -72,3 +72,26 @@ rules:
 
     with pytest.raises(RuleLoadError, match="case_sensitiv"):
         load_rules(bad_rules)
+
+
+def test_regexes_matching_empty_text_are_rejected(tmp_path: Path):
+    bad_rules = tmp_path / "empty_match.yml"
+    bad_rules.write_text(
+        """
+rules:
+  - id: empty_match
+    name: Empty Match
+    description: matches every line
+    patterns: ['.*']
+    crypto_family: Test
+    usage_category: config
+    severity: low
+    confidence: low
+    reason: testing
+    recommendation: review
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuleLoadError, match="must not match empty text"):
+        load_rules(bad_rules)

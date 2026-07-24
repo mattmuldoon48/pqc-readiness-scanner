@@ -48,8 +48,12 @@ def load_rules(path: Path | None = None) -> list[Rule]:
         flags = 0 if rule.case_sensitive else re.IGNORECASE
         for pattern in rule.patterns:
             try:
-                re.compile(pattern, flags)
+                compiled_pattern = re.compile(pattern, flags)
             except re.error as exc:
                 raise RuleLoadError(f"Invalid regex in {rule.id}: {exc}") from exc
+            if compiled_pattern.search("") is not None:
+                raise RuleLoadError(
+                    f"Regex in {rule.id} must not match empty text: {pattern!r}"
+                )
 
     return sorted(rules, key=lambda rule: rule.id)
