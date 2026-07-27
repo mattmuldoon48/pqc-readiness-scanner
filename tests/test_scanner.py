@@ -115,3 +115,18 @@ def test_output_directory_must_not_contain_scan_target(tmp_path: Path, output_lo
         match="Output directory must not be the scan target or an ancestor of it",
     ):
         scan_path(target, output_dir=output_dir)
+
+
+def test_binary_detection_checks_beyond_initial_prefix(tmp_path: Path):
+    binary_path = tmp_path / "late-null.pem"
+    binary_path.write_bytes(
+        b"A" * 5000 + b"\x00-----BEGIN RSA PRIVATE KEY-----",
+    )
+
+    result = scan_path(tmp_path)
+
+    assert result.files_scanned == 0
+    assert result.findings == []
+    assert [warning.message for warning in result.warnings] == [
+        "Skipped likely binary file",
+    ]

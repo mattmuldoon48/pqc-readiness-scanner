@@ -67,7 +67,7 @@ def scan_path(
             warnings.append(ScanWarning(file_path=rel_report, message=f"Skipped unreadable file: {exc}"))
             continue
 
-        if b"\x00" in data[:4096]:
+        if b"\x00" in data:
             warnings.append(ScanWarning(file_path=rel_report, message="Skipped likely binary file"))
             continue
 
