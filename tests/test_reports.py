@@ -10,7 +10,15 @@ from pqc_scanner.baseline import (
     finding_fingerprint,
     load_baseline_findings,
 )
-from pqc_scanner.reports import BASELINE_DIFF_NAME, CSV_NAME, JSON_NAME, MARKDOWN_NAME, SARIF_NAME, write_reports
+from pqc_scanner.reports import (
+    BASELINE_DIFF_NAME,
+    CSV_NAME,
+    JSON_NAME,
+    MARKDOWN_NAME,
+    SARIF_NAME,
+    render_sarif,
+    write_reports,
+)
 from pqc_scanner.scanner import scan_path
 
 
@@ -201,3 +209,20 @@ def test_baseline_diff_reports_surplus_when_occurrences_shrink_from_three_to_two
         finding_fingerprint(current[1]),
         finding_fingerprint(current[0]),
     ]
+
+
+def test_sarif_artifact_locations_are_uri_encoded(tmp_path: Path):
+    source_dir = tmp_path / "dir #"
+    source_dir.mkdir()
+    (source_dir / "key.pem").write_text(
+        "-----BEGIN RSA PRIVATE KEY-----",
+        encoding="utf-8",
+    )
+    result = scan_path(tmp_path)
+
+    sarif = render_sarif(result)
+
+    uri = sarif["runs"][0]["results"][0]["locations"][0]["physicalLocation"][
+        "artifactLocation"
+    ]["uri"]
+    assert uri == "dir%20%23/key.pem"

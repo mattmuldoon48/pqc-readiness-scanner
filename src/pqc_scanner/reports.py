@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+from urllib.parse import quote
 
 from .baseline import BaselineDiff, compare_to_baseline
 
@@ -193,7 +194,7 @@ def sarif_result(finding) -> dict[str, object]:
         "locations": [
             {
                 "physicalLocation": {
-                    "artifactLocation": {"uri": finding.file_path},
+                    "artifactLocation": {"uri": quote(finding.file_path, safe="/")},
                     "region": {
                         "startLine": finding.line_number,
                         "snippet": {"text": finding.matched_text},
