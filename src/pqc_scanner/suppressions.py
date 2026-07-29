@@ -4,12 +4,14 @@ import fnmatch
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .models import Finding
 
 
 class Suppression(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     rule_id: str | None = None
     file_path: str | None = None
     matched_text: str | None = None

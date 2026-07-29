@@ -130,3 +130,19 @@ def test_binary_detection_checks_beyond_initial_prefix(tmp_path: Path):
     assert [warning.message for warning in result.warnings] == [
         "Skipped likely binary file",
     ]
+
+
+def test_unknown_suppression_fields_are_rejected(tmp_path: Path):
+    suppressions_path = tmp_path / "suppressions.yml"
+    suppressions_path.write_text(
+        """
+suppressions:
+  - file_path: "*.pem"
+    matched_textt: RSA
+    reason: narrow RSA exception
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SuppressionLoadError, match="matched_textt"):
+        load_suppressions(suppressions_path)
