@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 Severity = Literal["low", "medium", "high", "critical"]
@@ -26,6 +26,21 @@ class Rule(BaseModel):
     recommendation: str = Field(..., min_length=1)
     file_globs: list[str] = Field(default_factory=lambda: ["**/*"])
     case_sensitive: bool = False
+
+    @field_validator(
+        "id",
+        "name",
+        "description",
+        "crypto_family",
+        "usage_category",
+        "reason",
+        "recommendation",
+    )
+    @classmethod
+    def required_metadata_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Rule metadata fields must not be blank")
+        return value
 
 
 

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -94,4 +95,43 @@ rules:
     )
 
     with pytest.raises(RuleLoadError, match="must not match empty text"):
+        load_rules(bad_rules)
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "id",
+        "name",
+        "description",
+        "crypto_family",
+        "usage_category",
+        "reason",
+        "recommendation",
+    ],
+)
+def test_blank_required_rule_metadata_is_rejected(
+    tmp_path: Path,
+    field_name: str,
+):
+    rule = {
+        "id": "blank_metadata",
+        "name": "Blank Metadata",
+        "description": "test rule",
+        "patterns": ["RSA"],
+        "crypto_family": "RSA",
+        "usage_category": "config",
+        "severity": "low",
+        "confidence": "low",
+        "reason": "inventory",
+        "recommendation": "review",
+    }
+    rule[field_name] = "   "
+    bad_rules = tmp_path / "blank_metadata.yml"
+    bad_rules.write_text(
+        json.dumps({"rules": [rule]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuleLoadError, match="must not be blank"):
         load_rules(bad_rules)
