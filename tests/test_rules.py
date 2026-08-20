@@ -135,3 +135,31 @@ def test_blank_required_rule_metadata_is_rejected(
 
     with pytest.raises(RuleLoadError, match="must not be blank"):
         load_rules(bad_rules)
+
+
+@pytest.mark.parametrize("file_globs", [[], ["   "]])
+def test_empty_or_blank_file_globs_are_rejected(
+    tmp_path: Path,
+    file_globs: list[str],
+):
+    rule = {
+        "id": "disabled_rule",
+        "name": "Disabled Rule",
+        "description": "rule that cannot match a file",
+        "patterns": ["RSA"],
+        "crypto_family": "RSA",
+        "usage_category": "config",
+        "severity": "low",
+        "confidence": "low",
+        "reason": "inventory",
+        "recommendation": "review",
+        "file_globs": file_globs,
+    }
+    bad_rules = tmp_path / "disabled_rule.yml"
+    bad_rules.write_text(json.dumps({"rules": [rule]}), encoding="utf-8")
+
+    with pytest.raises(
+        RuleLoadError,
+        match="file_globs must contain at least one non-blank glob",
+    ):
+        load_rules(bad_rules)

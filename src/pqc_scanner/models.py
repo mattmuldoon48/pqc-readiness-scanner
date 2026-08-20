@@ -42,6 +42,13 @@ class Rule(BaseModel):
             raise ValueError("Rule metadata fields must not be blank")
         return value
 
+    @field_validator("file_globs")
+    @classmethod
+    def file_globs_must_not_be_empty_or_blank(cls, value: list[str]) -> list[str]:
+        if not value or any(not glob.strip() for glob in value):
+            raise ValueError("Rule file_globs must contain at least one non-blank glob")
+        return value
+
 
 
 class Finding(BaseModel):
