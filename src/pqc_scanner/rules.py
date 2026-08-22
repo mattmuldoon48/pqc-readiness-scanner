@@ -31,6 +31,8 @@ def load_rules(path: Path | None = None) -> list[Rule]:
 
     if not isinstance(raw, dict) or not isinstance(raw.get("rules"), list):
         raise RuleLoadError("Rules file must contain a top-level 'rules' list")
+    if not raw["rules"]:
+        raise RuleLoadError("Rules file must define at least one rule")
 
     rules: list[Rule] = []
     try:

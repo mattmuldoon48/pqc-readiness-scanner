@@ -29,6 +29,17 @@ def test_invalid_rules_file_reports_validation_error(tmp_path: Path):
         load_rules(bad_rules)
 
 
+def test_empty_rule_set_is_rejected(tmp_path: Path):
+    empty_rules = tmp_path / "empty.yml"
+    empty_rules.write_text("rules: []\n", encoding="utf-8")
+
+    with pytest.raises(
+        RuleLoadError,
+        match="Rules file must define at least one rule",
+    ):
+        load_rules(empty_rules)
+
+
 def test_invalid_regex_is_rejected(tmp_path: Path):
     bad_rules = tmp_path / "bad_regex.yml"
     bad_rules.write_text(
