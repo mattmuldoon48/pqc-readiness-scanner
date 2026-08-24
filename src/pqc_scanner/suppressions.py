@@ -4,7 +4,7 @@ import fnmatch
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from .models import Finding
 
@@ -16,6 +16,16 @@ class Suppression(BaseModel):
     file_path: str | None = None
     matched_text: str | None = None
     reason: str = Field(..., min_length=1)
+
+    @field_validator("rule_id", "file_path", "matched_text", "reason")
+    @classmethod
+    def configured_fields_must_not_be_blank(
+        cls,
+        value: str | None,
+    ) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("Suppression fields must not be blank")
+        return value
 
 
 class SuppressionLoadError(ValueError):

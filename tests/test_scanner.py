@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from pqc_scanner.scanner import scan_path
 from pqc_scanner.suppressions import SuppressionLoadError, load_suppressions
@@ -83,6 +84,26 @@ def test_suppression_entries_must_be_objects(tmp_path: Path):
     suppressions_path.write_text("suppressions:\n  - typo\n", encoding="utf-8")
 
     with pytest.raises(SuppressionLoadError, match="Suppression entry 1 must be an object"):
+        load_suppressions(suppressions_path)
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["rule_id", "file_path", "matched_text", "reason"],
+)
+def test_blank_suppression_fields_are_rejected(
+    tmp_path: Path,
+    field_name: str,
+):
+    entry = {"rule_id": "rsa_private_key_marker", "reason": "reviewed exception"}
+    entry[field_name] = "   "
+    suppressions_path = tmp_path / "suppressions.yml"
+    suppressions_path.write_text(
+        yaml.safe_dump({"suppressions": [entry]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SuppressionLoadError, match="Suppression fields must not be blank"):
         load_suppressions(suppressions_path)
 
 
