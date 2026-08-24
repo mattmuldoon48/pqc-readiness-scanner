@@ -66,6 +66,22 @@ class Finding(BaseModel):
     risk_score: int = Field(..., ge=0, le=100)
     risk_level: Literal["low", "medium", "high", "critical"]
 
+    @field_validator(
+        "rule_id",
+        "rule_name",
+        "file_path",
+        "matched_text",
+        "crypto_family",
+        "usage_category",
+        "reason",
+        "recommendation",
+    )
+    @classmethod
+    def required_text_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Finding text fields must not be blank")
+        return value
+
 
 class ScanWarning(BaseModel):
     file_path: str

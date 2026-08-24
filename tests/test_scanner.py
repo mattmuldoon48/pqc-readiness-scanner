@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
+from pqc_scanner.models import Finding
 from pqc_scanner.scanner import scan_path
 from pqc_scanner.suppressions import SuppressionLoadError, load_suppressions
 
@@ -167,3 +169,38 @@ suppressions:
 
     with pytest.raises(SuppressionLoadError, match="matched_textt"):
         load_suppressions(suppressions_path)
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "rule_id",
+        "rule_name",
+        "file_path",
+        "matched_text",
+        "crypto_family",
+        "usage_category",
+        "reason",
+        "recommendation",
+    ],
+)
+def test_finding_text_fields_must_not_be_blank(field_name: str):
+    payload = {
+        "rule_id": "rsa_private_key_marker",
+        "rule_name": "RSA private key",
+        "file_path": "key.pem",
+        "line_number": 1,
+        "matched_text": "BEGIN RSA PRIVATE KEY",
+        "crypto_family": "RSA",
+        "usage_category": "key material",
+        "severity": "critical",
+        "confidence": "high",
+        "reason": "classical key",
+        "recommendation": "inventory and migrate",
+        "risk_score": 100,
+        "risk_level": "critical",
+    }
+    payload[field_name] = "   "
+
+    with pytest.raises(ValidationError, match="Finding text fields must not be blank"):
+        Finding(**payload)
