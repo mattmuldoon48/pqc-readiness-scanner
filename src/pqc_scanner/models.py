@@ -4,11 +4,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 Severity = Literal["low", "medium", "high", "critical"]
 Confidence = Literal["low", "medium", "high"]
+RiskLevel = Literal["low", "medium", "high", "critical"]
+
+
+def risk_level_for_score(score: int) -> RiskLevel:
+    if score >= 85:
+        return "critical"
+    if score >= 65:
+        return "high"
+    if score >= 35:
+        return "medium"
+    return "low"
+
 
 
 class Rule(BaseModel):
@@ -64,7 +76,7 @@ class Finding(BaseModel):
     reason: str
     recommendation: str
     risk_score: int = Field(..., ge=0, le=100)
-    risk_level: Literal["low", "medium", "high", "critical"]
+    risk_level: RiskLevel
 
     @field_validator(
         "rule_id",
@@ -81,6 +93,15 @@ class Finding(BaseModel):
         if not value.strip():
             raise ValueError("Finding text fields must not be blank")
         return value
+
+    @model_validator(mode="after")
+    def risk_level_must_match_score(self) -> "Finding":
+        expected = risk_level_for_score(self.risk_score)
+        if self.risk_level != expected:
+            raise ValueError(
+                f"risk_level must be {expected!r} for risk_score {self.risk_score}"
+            )
+        return self
 
 
 class ScanWarning(BaseModel):

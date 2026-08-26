@@ -204,3 +204,26 @@ def test_finding_text_fields_must_not_be_blank(field_name: str):
 
     with pytest.raises(ValidationError, match="Finding text fields must not be blank"):
         Finding(**payload)
+
+
+
+def test_finding_risk_level_must_match_score():
+    with pytest.raises(
+        ValidationError,
+        match="risk_level must be 'critical' for risk_score 100",
+    ):
+        Finding(
+            rule_id="rsa_private_key_marker",
+            rule_name="RSA private key",
+            file_path="key.pem",
+            line_number=1,
+            matched_text="BEGIN RSA PRIVATE KEY",
+            crypto_family="RSA",
+            usage_category="key material",
+            severity="critical",
+            confidence="high",
+            reason="classical key",
+            recommendation="inventory and migrate",
+            risk_score=100,
+            risk_level="low",
+        )

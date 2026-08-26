@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .models import Rule
+from .models import Rule, risk_level_for_score
 
 
 SEVERITY_BASE = {
@@ -43,12 +43,4 @@ def score_finding(rule: Rule, relative_path: Path, matched_text: str) -> tuple[i
         score += 8
 
     score = max(0, min(100, score))
-    if score >= 85:
-        level = "critical"
-    elif score >= 65:
-        level = "high"
-    elif score >= 35:
-        level = "medium"
-    else:
-        level = "low"
-    return score, level
+    return score, risk_level_for_score(score)
