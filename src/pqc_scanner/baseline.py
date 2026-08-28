@@ -55,11 +55,24 @@ def load_baseline_findings(path: Path) -> list[dict[str, Any]]:
         raise BaselineLoadError("Baseline must be a crypto_inventory.json file with a findings list")
 
     validated: list[dict[str, Any]] = []
+    first_seen_indexes: dict[tuple[str, str, int, str], int] = {}
     for index, finding in enumerate(findings):
         try:
             validated_finding = Finding.model_validate(finding)
         except ValidationError as exc:
             raise BaselineLoadError(f"Invalid baseline finding at index {index}: {exc}") from exc
+        occurrence = (
+            validated_finding.rule_id,
+            validated_finding.file_path,
+            validated_finding.line_number,
+            validated_finding.matched_text,
+        )
+        if occurrence in first_seen_indexes:
+            raise BaselineLoadError(
+                f"Duplicate baseline finding at index {index}; "
+                f"first seen at index {first_seen_indexes[occurrence]}"
+            )
+        first_seen_indexes[occurrence] = index
         validated.append(validated_finding.model_dump())
     return validated
 

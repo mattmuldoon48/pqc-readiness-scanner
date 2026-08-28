@@ -123,6 +123,22 @@ def test_baseline_loader_rejects_invalid_entries_atomically(
     assert expected_context in str(error.value)
 
 
+def test_baseline_loader_rejects_duplicate_findings(tmp_path: Path):
+    scanner_result = scan_path(Path("examples/mock_enterprise_app"))
+    finding = scanner_result.to_dict()["findings"][0]
+    baseline_path = tmp_path / "duplicate_baseline.json"
+    baseline_path.write_text(
+        json.dumps({"findings": [finding, finding]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        BaselineLoadError,
+        match="Duplicate baseline finding at index 1; first seen at index 0",
+    ):
+        load_baseline_findings(baseline_path)
+
+
 @pytest.mark.parametrize(
     ("field", "invalid_value"),
     [
