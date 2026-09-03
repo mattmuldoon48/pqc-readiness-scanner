@@ -54,6 +54,14 @@ class Rule(BaseModel):
             raise ValueError("Rule metadata fields must not be blank")
         return value
 
+    @field_validator("patterns", mode="before")
+    @classmethod
+    def patterns_must_not_be_empty_or_blank(cls, value: list[str]) -> list[str]:
+        if not value or any(not pattern.strip() for pattern in value):
+            raise ValueError("Rule patterns must contain at least one non-blank regex")
+        return value
+
+
     @field_validator("file_globs")
     @classmethod
     def file_globs_must_not_be_empty_or_blank(cls, value: list[str]) -> list[str]:
