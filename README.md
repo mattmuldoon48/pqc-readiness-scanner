@@ -56,6 +56,8 @@ Generated files:
 
 Use `crypto_inventory.json` as the source of truth for automation, `pqc_readiness_report.md` for reviewer handoff, `risk_summary.csv` for sorting and owner triage, and SARIF for code-scanning integrations.
 
+A successful scan exits with status `0` even when it finds critical issues or skips files with warnings; this signals scan completion, not a clean security assessment. For CI gates, inspect `findings` and `summary` in `crypto_inventory.json` rather than relying on the exit status alone. Review its `warnings` array, or the Markdown report's `Warnings` section, for oversized, unreadable, or likely binary files that were skipped.
+
 ## Sample output
 
 ```text
