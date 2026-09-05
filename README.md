@@ -100,9 +100,9 @@ suppressions:
 
 Suppressions should be narrow and reviewable: match on `rule_id`, `file_path`, or `matched_text`, and keep the required reason specific enough for a later reviewer to decide whether the exception still applies.
 
-Baseline mode compares the current scan to a previous `crypto_inventory.json` and writes `baseline_diff.json` with new, resolved, and unchanged findings.
+Baseline mode compares the current scan's findings after suppressions with the findings saved in a previous `crypto_inventory.json`, and writes `baseline_diff.json` with new, resolved, and unchanged findings. Suppressed findings are omitted from the inventory, not retained as accepted findings. Adding a suppression can therefore mark a previously reported finding as resolved without changing the source; removing a suppression can make a finding appear new when it was absent from the baseline.
 
-Use baseline diffs for review workflow changes: new findings need owner triage, resolved findings need confirmation that crypto was removed rather than renamed, and unchanged findings should keep their existing migration owner or suppression decision.
+Use the same suppression policy when generating a baseline and comparing scans if you want to isolate source changes. Review suppression-policy changes alongside the diff: new findings need owner triage, resolved findings need confirmation of actual crypto removal rather than a rename or newly applied suppression, and unchanged findings should keep their existing migration owner.
 
 
 ## Limitations and honesty
