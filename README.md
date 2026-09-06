@@ -46,6 +46,17 @@ python -m pqc_scanner scan examples/mock_enterprise_app \
   --baseline reports/previous/crypto_inventory.json
 ```
 
+To customize detection rules, copy the bundled YAML and edit the copy before scanning:
+
+```bash
+cp src/pqc_scanner/rules/default_rules.yml custom_rules.yml
+python -m pqc_scanner scan examples/mock_enterprise_app \
+  --out reports/custom_rules \
+  --rules custom_rules.yml
+```
+
+`--rules` replaces the bundled rule set; it does not add rules to it. Keep the bundled rules in your copy if you want to preserve their coverage. The file must contain a nonempty top-level `rules` list with unique rule IDs; use the bundled definitions as the schema examples.
+
 Generated files:
 
 - `crypto_inventory.json` — machine-readable inventory and summary
