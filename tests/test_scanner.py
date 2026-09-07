@@ -127,6 +127,23 @@ def test_scan_root_named_like_skipped_directory_is_scanned(tmp_path: Path):
     assert any(finding.crypto_family == "RSA" for finding in result.findings)
 
 
+def test_scan_excludes_external_file_and_directory_symlinks(tmp_path: Path):
+    target = tmp_path / "target"
+    target.mkdir()
+    (target / "local.pem").write_text("-----BEGIN RSA PUBLIC KEY-----", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    external_key = outside / "private.pem"
+    external_key.write_text("-----BEGIN RSA PRIVATE KEY-----", encoding="utf-8")
+    (target / "linked.pem").symlink_to(external_key)
+    (target / "linked_directory").symlink_to(outside, target_is_directory=True)
+
+    result = scan_path(target)
+
+    assert result.files_scanned == 1
+    assert {finding.file_path for finding in result.findings} == {"local.pem"}
+
+
 @pytest.mark.parametrize("output_location", ["target", "parent"])
 def test_output_directory_must_not_contain_scan_target(tmp_path: Path, output_location: str):
     target = tmp_path / "target"
