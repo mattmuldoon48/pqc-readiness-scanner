@@ -64,6 +64,48 @@ def test_csv_has_stable_header_and_one_row_per_finding(tmp_path: Path):
     assert len(rows) == result.summary.total_findings
 
 
+def test_suppression_requires_all_selectors_before_omitting_inventory_finding(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / "accepted.txt").write_text(
+        "-----BEGIN RSA PRIVATE KEY-----\n"
+        "-----BEGIN RSA PUBLIC KEY-----\n"
+        "-----BEGIN PRIVATE KEY-----\n",
+        encoding="utf-8",
+    )
+    (target / "production.txt").write_text("-----BEGIN RSA PRIVATE KEY-----\n", encoding="utf-8")
+    policy = tmp_path / "suppressions.yml"
+    policy.write_text(
+        "suppressions:\n"
+        "  - rule_id: 'rsa_*_key_marker'\n"
+        "    file_path: accepted.txt\n"
+        "    matched_text: private key\n"
+        "    reason: Reviewed RSA private-key fixture only\n",
+        encoding="utf-8",
+    )
+    before = {
+        (finding.file_path, finding.line_number, finding.rule_id)
+        for finding in scan_path(target).findings
+    }
+    removed = ("accepted.txt", 1, "rsa_private_key_marker")
+    partial_matches = {
+        ("accepted.txt", 2, "rsa_public_key_marker"),
+        ("accepted.txt", 3, "generic_private_key_marker"),
+        ("production.txt", 1, "rsa_private_key_marker"),
+    }
+    assert partial_matches | {removed} <= before
+
+    result = scan_path(target, suppressions_path=policy)
+    paths = write_reports(result, tmp_path / "reports")
+    inventory = json.loads(paths["json"].read_text(encoding="utf-8"))
+    after = {
+        (finding["file_path"], finding["line_number"], finding["rule_id"])
+        for finding in inventory["findings"]
+    }
+
+    assert after == before - {removed}
+
+
 def test_baseline_diff_report_identifies_new_and_resolved_findings(tmp_path: Path):
     baseline_result = scan_path(Path("examples/mock_enterprise_app"))
     baseline_paths = write_reports(baseline_result, tmp_path / "baseline")
