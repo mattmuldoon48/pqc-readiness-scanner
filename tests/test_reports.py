@@ -39,15 +39,34 @@ def test_nested_report_output_is_excluded_from_repeat_scans(tmp_path: Path):
 
 
 
-def test_csv_has_stable_header_and_one_row_per_finding(tmp_path: Path):
-    result = scan_path(Path("examples/mock_enterprise_app"))
-    paths = write_reports(result, tmp_path)
+def test_csv_round_trips_quoted_paths_and_evidence(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / 'keys,"legacy".txt').write_text(
+        'RSA,"legacy"\nRSA,"replacement"\n', encoding="utf-8"
+    )
+    rules_path = tmp_path / "rules.yml"
+    rules_path.write_text(
+        "rules:\n"
+        "  - id: csv_evidence\n"
+        "    name: CSV evidence\n"
+        "    description: Match an RSA inventory label including punctuation\n"
+        "    patterns: ['RSA,\"[^\"]+\"']\n"
+        "    crypto_family: RSA\n"
+        "    usage_category: config\n"
+        "    severity: high\n"
+        "    reason: Inventory classical signing dependencies\n"
+        "    recommendation: Review migration options\n",
+        encoding="utf-8",
+    )
+    result = scan_path(target, rules_path=rules_path)
+    paths = write_reports(result, tmp_path / "reports")
 
     with paths["csv"].open(encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle))
+        reader = csv.DictReader(handle)
+        rows = list(reader)
 
-    assert rows
-    assert list(rows[0].keys()) == [
+    assert reader.fieldnames == [
         "rule_id",
         "file_path",
         "line_number",
@@ -61,7 +80,14 @@ def test_csv_has_stable_header_and_one_row_per_finding(tmp_path: Path):
         "reason",
         "recommendation",
     ]
-    assert len(rows) == result.summary.total_findings
+    assert all(None not in row and None not in row.values() for row in rows)
+    assert [
+        (row["rule_id"], row["file_path"], row["line_number"], row["matched_text"])
+        for row in rows
+    ] == [
+        ("csv_evidence", 'keys,"legacy".txt', "1", 'RSA,"legacy"'),
+        ("csv_evidence", 'keys,"legacy".txt', "2", 'RSA,"replacement"'),
+    ]
 
 
 def test_suppression_requires_all_selectors_before_omitting_inventory_finding(tmp_path: Path):
