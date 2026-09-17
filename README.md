@@ -113,6 +113,8 @@ Suppressions should be narrow and reviewable: match on `rule_id`, `file_path`, o
 
 Baseline mode compares the current scan's findings after suppressions with the findings saved in a previous `crypto_inventory.json`, and writes `baseline_diff.json` with new, resolved, and unchanged findings. Suppressed findings are omitted from the inventory, not retained as accepted findings. Adding a suppression can therefore mark a previously reported finding as resolved without changing the source; removing a suppression can make a finding appear new when it was absent from the baseline.
 
+Baseline identity uses `rule_id`, the target-relative `file_path`, and `matched_text`, not the line number. Moving the same match within a file can remain unchanged; renaming the file produces resolved findings at the old path and new findings at the new path. “Unchanged” means the finding identity matched, not that all metadata stayed the same: severity, confidence, and risk-score changes do not change that classification. Compare the inventories themselves when reviewing risk changes, rather than relying only on new/resolved counts.
+
 Use the same suppression policy when generating a baseline and comparing scans if you want to isolate source changes. Review suppression-policy changes alongside the diff: new findings need owner triage, resolved findings need confirmation of actual crypto removal rather than a rename or newly applied suppression, and unchanged findings should keep their existing migration owner.
 
 
