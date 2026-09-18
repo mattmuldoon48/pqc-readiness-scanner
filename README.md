@@ -37,6 +37,8 @@ python -m pip install -e ".[dev]"
 python -m pqc_scanner scan examples/mock_enterprise_app --out reports/mock_enterprise_app
 ```
 
+Choose an output directory separate from the scan target: `--out` cannot be the target itself or an ancestor of it. A directory nested inside the target is allowed, but its entire contents are excluded from scanning, including on later runs, so generated reports do not become new findings. Reserve that directory for reports rather than source files you want scanned; the example above keeps reports outside the target altogether.
+
 With suppressions and baseline comparison:
 
 ```bash
