@@ -23,6 +23,12 @@ Rules are loaded from `src/pqc_scanner/rules/default_rules.yml` and matched dete
 
 For each finding the scanner records rule ID, file path, line number, matched snippet, crypto family, usage category, severity, confidence, reason, recommendation, risk score, and risk level.
 
+### Traversal scope
+
+The scanner does not use `.gitignore`. It excludes descendants of directories named `.git`, `.hg`, `.svn`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `node_modules`, `dist`, or `build`, and files named `.pqc-scanner-ignore.yml` or `.pqc-scanner-ignore.yaml`. File and directory symlinks encountered beneath the target are not followed. These exclusions are silent: they do not appear in report warnings or count toward “Files scanned.”
+
+A directory explicitly selected as the target is still scanned even if its own name is on the excluded list—for example, scan `app/build` separately to inventory that generated output. “Files scanned” counts successfully read, nonbinary files, including files with no findings; a warning-free report does not mean every file under the target was inspected.
+
 ## Install
 
 ```bash
