@@ -151,6 +151,29 @@ def test_baseline_diff_report_identifies_new_and_resolved_findings(tmp_path: Pat
     assert "## Baseline Diff" in report
 
 
+def test_reusing_output_without_baseline_removes_only_obsolete_comparison(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / "key.pem").write_text("-----BEGIN RSA PRIVATE KEY-----\n", encoding="utf-8")
+    result = scan_path(target)
+    baseline_path = tmp_path / "baseline.json"
+    baseline_path.write_text(json.dumps({"findings": []}), encoding="utf-8")
+    output_dir = tmp_path / "reports"
+
+    write_reports(result, output_dir, baseline_path=baseline_path)
+    comparison_path = output_dir / BASELINE_DIFF_NAME
+    assert comparison_path.is_file()
+    notes_path = output_dir / "reviewer_notes.txt"
+    notes_path.write_text("Keep the migration review notes.\n", encoding="utf-8")
+
+    write_reports(result, output_dir)
+
+    assert not comparison_path.exists()
+    assert notes_path.read_text(encoding="utf-8") == "Keep the migration review notes.\n"
+    write_reports(result, output_dir, baseline_path=baseline_path)
+    assert comparison_path.is_file()
+
+
 def test_baseline_loader_preserves_valid_empty_findings_list(tmp_path: Path):
     baseline_path = tmp_path / "empty_baseline.json"
     baseline_path.write_text(json.dumps({"findings": []}), encoding="utf-8")

@@ -71,7 +71,7 @@ Generated files:
 - `pqc_readiness_report.md` — human-readable readiness report
 - `risk_summary.csv` — spreadsheet-friendly finding list
 - `pqc_findings.sarif` — SARIF output for security tooling and code scanning workflows
-- `baseline_diff.json` — new/resolved/unchanged finding comparison when `--baseline` is provided
+- `baseline_diff.json` — new/resolved/unchanged finding comparison when `--baseline` is provided; a successful scan without `--baseline` removes an older comparison from the same output directory
 
 Use `crypto_inventory.json` as the source of truth for automation, `pqc_readiness_report.md` for reviewer handoff, `risk_summary.csv` for sorting and owner triage, and SARIF for code-scanning integrations.
 

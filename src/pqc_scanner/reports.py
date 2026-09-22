@@ -49,6 +49,8 @@ def write_reports(result: ScanResult, output_dir: Path, baseline_path: Path | No
     paths["sarif"].write_text(json.dumps(render_sarif(result), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if baseline_diff is not None:
         paths["baseline_diff"].write_text(json.dumps(baseline_diff.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    else:
+        (output / BASELINE_DIFF_NAME).unlink(missing_ok=True)
     return paths
 
 
