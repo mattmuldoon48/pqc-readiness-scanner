@@ -5,7 +5,7 @@ import yaml
 from pydantic import ValidationError
 
 from pqc_scanner.models import Finding
-from pqc_scanner.scanner import scan_path
+from pqc_scanner.scanner import MAX_FILE_BYTES, scan_path
 from pqc_scanner.suppressions import SuppressionLoadError, load_suppressions
 
 EXAMPLE = Path("examples/mock_enterprise_app")
@@ -155,6 +155,24 @@ def test_output_directory_must_not_contain_scan_target(tmp_path: Path, output_lo
         match="Output directory must not be the scan target or an ancestor of it",
     ):
         scan_path(target, output_dir=output_dir)
+
+
+def test_scan_file_size_limit_is_inclusive(tmp_path: Path):
+    marker = b"-----BEGIN RSA PRIVATE KEY-----\n"
+    contents = marker + b"x" * (MAX_FILE_BYTES - len(marker))
+    (tmp_path / "at-limit.txt").write_bytes(contents)
+    (tmp_path / "over-limit.txt").write_bytes(contents + b"x")
+
+    result = scan_path(tmp_path)
+
+    assert result.files_scanned == 1
+    assert [
+        (finding.file_path, finding.rule_id, finding.line_number, finding.matched_text)
+        for finding in result.findings
+    ] == [
+        ("at-limit.txt", "rsa_private_key_marker", 1, "-----BEGIN RSA PRIVATE KEY-----"),
+    ]
+    assert [warning.file_path for warning in result.warnings] == ["over-limit.txt"]
 
 
 def test_binary_detection_checks_beyond_initial_prefix(tmp_path: Path):
