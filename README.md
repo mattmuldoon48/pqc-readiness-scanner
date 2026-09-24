@@ -106,6 +106,14 @@ Risk scoring is intentionally simple and explainable:
 
 Scores help triage inventory review; they are not cryptographic proof of exploitability.
 
+The report classifications serve different purposes:
+
+- `severity` is the rule's fixed rating. It drives `summary.by_severity` and the Markdown severity counts and column.
+- `risk_score` adds path, usage, and matched-text context to that rating, then clamps the result to `0–100`. `risk_level` follows this score: `critical` at `85–100`, `high` at `65–84`, `medium` at `35–64`, and `low` below `35`. Context can change risk level without changing severity.
+- SARIF `level` maps rule severity, not computed risk: `critical`/`high` become `error`, `medium` becomes `warning`, and `low` becomes `note`. The separate `risk_score` and `risk_level` remain in each SARIF result's `properties`.
+
+Use `risk_score`/`risk_level` for context-sensitive triage, and `severity` for rule-level policy. A medium-risk finding can still be a SARIF `error` when its rule severity is high; those labels are not contradictory.
+
 ## Suppressions and baselines
 
 Suppression files are YAML documents with explicit reasons:
