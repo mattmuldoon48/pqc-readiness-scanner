@@ -65,6 +65,13 @@ python -m pqc_scanner scan examples/mock_enterprise_app \
 
 `--rules` replaces the bundled rule set; it does not add rules to it. Keep the bundled rules in your copy if you want to preserve their coverage. The file must contain a nonempty top-level `rules` list with unique rule IDs; use the bundled definitions as the schema examples.
 
+When editing a rule's `patterns`:
+
+- Patterns are Python regular expressions, not literal strings or shell globs. Single-quoted YAML preserves regex backslashes, for example `'\bRSA\b'`.
+- Each pattern is searched independently on each decoded line. A match from any pattern can produce a finding; patterns do not require one another to match. Matches cannot span lines, even with an inline DOTALL flag such as `(?s)`.
+- Matching is case-insensitive by default. Set `case_sensitive: true` on the rule to make case significant.
+- Blank patterns, invalid regex syntax, and patterns that match the empty string are rejected when rules are loaded.
+
 Generated files:
 
 - `crypto_inventory.json` — machine-readable inventory and summary
