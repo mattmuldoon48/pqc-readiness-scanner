@@ -175,6 +175,25 @@ def test_scan_file_size_limit_is_inclusive(tmp_path: Path):
     assert [warning.file_path for warning in result.warnings] == ["over-limit.txt"]
 
 
+def test_scan_preserves_ascii_findings_in_malformed_utf8(tmp_path: Path):
+    (tmp_path / "a-legacy.txt").write_bytes(
+        b"legacy metadata: \xff\xfe\n\x80-----BEGIN RSA PRIVATE KEY-----\xff\n",
+    )
+    (tmp_path / "z-valid.txt").write_bytes(b"-----BEGIN RSA PUBLIC KEY-----\n")
+
+    result = scan_path(tmp_path)
+
+    assert result.files_scanned == 2
+    assert [
+        (finding.file_path, finding.rule_id, finding.line_number, finding.matched_text)
+        for finding in result.findings
+    ] == [
+        ("a-legacy.txt", "rsa_private_key_marker", 2, "-----BEGIN RSA PRIVATE KEY-----"),
+        ("z-valid.txt", "rsa_public_key_marker", 1, "-----BEGIN RSA PUBLIC KEY-----"),
+    ]
+    assert result.warnings == []
+
+
 def test_binary_detection_checks_beyond_initial_prefix(tmp_path: Path):
     binary_path = tmp_path / "late-null.pem"
     binary_path.write_bytes(

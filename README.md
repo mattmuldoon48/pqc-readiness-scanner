@@ -29,6 +29,8 @@ The scanner does not use `.gitignore`. It excludes descendants of directories na
 
 A directory explicitly selected as the target is still scanned even if its own name is on the excluded list—for example, scan `app/build` separately to inventory that generated output. “Files scanned” counts successfully read, nonbinary files, including files with no findings; a warning-free report does not mean every file under the target was inspected.
 
+Files containing a NUL byte are skipped as likely binary. Other files are decoded as UTF-8 with invalid bytes replaced, not rejected: intact ASCII crypto markers can still produce findings with their original line numbers, and decoding replacements do not generate warnings. This is not automatic detection of legacy encodings; corrupted or differently encoded text can still hide evidence.
+
 ## Install
 
 ```bash
