@@ -29,6 +29,29 @@ def test_invalid_rules_file_reports_validation_error(tmp_path: Path):
         load_rules(bad_rules)
 
 
+def test_non_object_rule_rejects_the_entire_rule_set(tmp_path: Path):
+    valid_rule = {
+        "id": "rsa_marker",
+        "name": "RSA marker",
+        "description": "Detect RSA references",
+        "patterns": ["RSA"],
+        "crypto_family": "RSA",
+        "usage_category": "config",
+        "severity": "low",
+        "reason": "inventory",
+        "recommendation": "review",
+    }
+    rules_path = tmp_path / "non_object.yml"
+    rules_path.write_text(
+        json.dumps({"rules": [valid_rule, "not a rule object"]}), encoding="utf-8"
+    )
+
+    with pytest.raises(RuleLoadError) as error:
+        load_rules(rules_path)
+
+    assert "entry 2" in str(error.value)
+
+
 def test_empty_rule_set_is_rejected(tmp_path: Path):
     empty_rules = tmp_path / "empty.yml"
     empty_rules.write_text("rules: []\n", encoding="utf-8")

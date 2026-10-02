@@ -36,7 +36,9 @@ def load_rules(path: Path | None = None) -> list[Rule]:
 
     rules: list[Rule] = []
     try:
-        for item in raw["rules"]:
+        for index, item in enumerate(raw["rules"], start=1):
+            if not isinstance(item, dict):
+                raise RuleLoadError(f"Rule entry {index} must be an object")
             rules.append(Rule(**item))
     except ValidationError as exc:
         raise RuleLoadError(f"Invalid rule definition: {exc}") from exc

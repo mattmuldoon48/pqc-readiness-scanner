@@ -67,6 +67,8 @@ python -m pqc_scanner scan examples/mock_enterprise_app \
 
 `--rules` replaces the bundled rule set; it does not add rules to it. Keep the bundled rules in your copy if you want to preserve their coverage. The file must contain a nonempty top-level `rules` list with unique rule IDs; use the bundled definitions as the schema examples.
 
+Each entry in `rules` must be a rule object, not a scalar, list, or null value. A non-object entry rejects the entire scan with its one-based entry number before reports are written; valid entries are not used as a partial rule set.
+
 When editing a rule's `patterns`:
 
 - Patterns are Python regular expressions, not literal strings or shell globs. Single-quoted YAML preserves regex backslashes, for example `'\bRSA\b'`.
