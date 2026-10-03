@@ -4,7 +4,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from pqc_scanner.models import Finding
+from pqc_scanner.models import Finding, risk_level_for_score
 from pqc_scanner.scanner import MAX_FILE_BYTES, scan_path
 from pqc_scanner.suppressions import SuppressionLoadError, load_suppressions
 
@@ -50,6 +50,21 @@ def test_scoring_prioritizes_private_keys_over_readme_mentions():
     assert private_key.risk_score >= 85
     assert private_key.risk_level == "critical"
     assert readme.risk_score < private_key.risk_score
+
+
+@pytest.mark.parametrize(
+    ("score", "expected_level"),
+    [
+        (34, "low"),
+        (35, "medium"),
+        (64, "medium"),
+        (65, "high"),
+        (84, "high"),
+        (85, "critical"),
+    ],
+)
+def test_risk_level_classification_boundaries(score: int, expected_level: str):
+    assert risk_level_for_score(score) == expected_level
 
 
 def test_generic_pem_containers_do_not_assume_rsa(tmp_path: Path):
