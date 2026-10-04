@@ -151,6 +151,27 @@ def test_baseline_diff_report_identifies_new_and_resolved_findings(tmp_path: Pat
     assert "## Baseline Diff" in report
 
 
+def test_in_place_baseline_compares_previous_inventory_before_replacement(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    marker = "-----BEGIN RSA PRIVATE KEY-----\n"
+    (target / "kept.txt").write_text(marker, encoding="utf-8")
+    old_path = target / "old.txt"
+    old_path.write_text(marker, encoding="utf-8")
+    output_dir = tmp_path / "reports"
+    baseline_path = write_reports(scan_path(target), output_dir)["json"]
+
+    old_path.rename(target / "new.txt")
+    paths = write_reports(scan_path(target), output_dir, baseline_path=baseline_path)
+
+    diff = json.loads(paths["baseline_diff"].read_text(encoding="utf-8"))
+    assert (diff["new_count"], diff["resolved_count"], diff["unchanged_count"]) == (1, 1, 1)
+    assert [finding["file_path"] for finding in diff["new_findings"]] == ["new.txt"]
+    assert [finding["file_path"] for finding in diff["resolved_findings"]] == ["old.txt"]
+    inventory = json.loads(baseline_path.read_text(encoding="utf-8"))
+    assert {finding["file_path"] for finding in inventory["findings"]} == {"kept.txt", "new.txt"}
+
+
 def test_reusing_output_without_baseline_removes_only_obsolete_comparison(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir()
