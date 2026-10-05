@@ -76,6 +76,14 @@ When editing a rule's `patterns`:
 - Matching is case-insensitive by default. Set `case_sensitive: true` on the rule to make case significant.
 - Blank patterns, invalid regex syntax, and patterns that match the empty string are rejected when rules are loaded.
 
+A rule's `file_globs` controls where its regexes apply. These are shell-style path patterns, not regular expressions, and entries are alternatives:
+
+- Omitting `file_globs`, or using `['*']` or `['**/*']`, allows the rule to match any file that survives the scanner's traversal exclusions.
+- Both `['*.pem']` and `['**/*.pem']` include PEM files at the target root and in nested directories. Matching checks target-relative paths and basenames, not only files directly under the target.
+- A directory pattern is not a strict depth boundary: `['config/*.pem']` can also match `config/nested/key.pem`. Review the inventory's `file_path` values when checking a custom rule's intended scope.
+
+File globs restrict a rule's findings, not traversal: a readable text file can still count toward “Files scanned” even when no rule's globs match it. They do not override excluded directories, symlinks, or other scan skips.
+
 Generated files:
 
 - `crypto_inventory.json` — machine-readable inventory and summary
