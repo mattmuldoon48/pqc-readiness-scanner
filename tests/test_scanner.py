@@ -96,6 +96,33 @@ def test_suppressions_remove_matching_findings():
     assert suppressed.summary.total_findings < unsuppressed.summary.total_findings
 
 
+@pytest.mark.parametrize("selector", ["*PRIVATE*KEY*", "PRIVATE.*KEY", "approved_fixture"])
+def test_suppression_matched_text_does_not_match_patterns_or_line_context(
+    tmp_path: Path, selector: str,
+):
+    target = tmp_path / "app"
+    target.mkdir()
+    marker = "-----BEGIN RSA PRIVATE KEY-----"
+    (target / "key.txt").write_text(f"approved_fixture {marker}\n", encoding="utf-8")
+    policy = tmp_path / "suppressions.yml"
+    policy.write_text(
+        yaml.safe_dump({"suppressions": [{
+            "rule_id": "rsa_private_key_marker",
+            "matched_text": selector,
+            "reason": "Reviewed fixture exception",
+        }]}),
+        encoding="utf-8",
+    )
+
+    result = scan_path(target, suppressions_path=policy)
+
+    assert [
+        (finding.file_path, finding.line_number, finding.rule_id, finding.matched_text)
+        for finding in result.findings
+    ] == [("key.txt", 1, "rsa_private_key_marker", marker)]
+    assert result.summary.total_findings == 1
+
+
 def test_suppression_entries_must_be_objects(tmp_path: Path):
     suppressions_path = tmp_path / "suppressions.yml"
     suppressions_path.write_text("suppressions:\n  - typo\n", encoding="utf-8")
