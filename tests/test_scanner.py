@@ -27,6 +27,47 @@ def test_scan_detects_required_crypto_families():
     assert "x509_certificate_reference" in rule_ids
 
 
+def test_scan_deduplicates_matches_without_merging_distinct_findings(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / "a.txt").write_text("RSA RSA ECDSA\nRSA\n", encoding="utf-8")
+    (target / "b.txt").write_text("RSA\n", encoding="utf-8")
+    rules_path = tmp_path / "rules.yml"
+    rules = [
+        {
+            "id": rule_id,
+            "name": "Public-key reference",
+            "description": "Inventory synthetic public-key markers",
+            "patterns": [r"\b(?:RSA|ECDSA)\b", r"(?:RSA|ECDSA)"],
+            "crypto_family": "Public key",
+            "usage_category": "config",
+            "severity": "high",
+            "reason": "Identify migration inventory",
+            "recommendation": "Review the owning service",
+        }
+        for rule_id in ("reference_a", "reference_b")
+    ]
+    rules_path.write_text(yaml.safe_dump({"rules": rules}), encoding="utf-8")
+
+    result = scan_path(target, rules_path=rules_path)
+
+    assert [
+        (finding.file_path, finding.line_number, finding.rule_id, finding.matched_text)
+        for finding in result.findings
+    ] == [
+        ("a.txt", 1, "reference_a", "ECDSA"),
+        ("a.txt", 1, "reference_a", "RSA"),
+        ("a.txt", 1, "reference_b", "ECDSA"),
+        ("a.txt", 1, "reference_b", "RSA"),
+        ("a.txt", 2, "reference_a", "RSA"),
+        ("a.txt", 2, "reference_b", "RSA"),
+        ("b.txt", 1, "reference_a", "RSA"),
+        ("b.txt", 1, "reference_b", "RSA"),
+    ]
+    assert result.summary.total_findings == 8
+    assert result.summary.by_severity == {"high": 8}
+
+
 def test_findings_have_required_fields_and_relative_paths():
     result = scan_path(EXAMPLE)
     finding = next(item for item in result.findings if item.rule_id == "jwt_classical_algorithms")
