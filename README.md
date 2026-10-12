@@ -98,6 +98,20 @@ Finding totals count retained inventory entries, not unique keys/assets or every
 
 A successful scan exits with status `0` even when it finds critical issues or skips files with warnings; this signals scan completion, not a clean security assessment. For CI gates, inspect `findings` and `summary` in `crypto_inventory.json` rather than relying on the exit status alone. Review its `warnings` array, or the Markdown report's `Warnings` section, for oversized, unreadable, or likely binary files that were skipped.
 
+### Reports after a failed run
+
+An invalid target or missing/invalid rules file fails before report generation, leaving any previous reports in place. Those files do not describe the failed attempt. Report writes themselves are not atomic: a filesystem error partway through writing can leave some files refreshed and others old, absent, or incomplete.
+
+Treat a report set as the current run's output only after the scan command succeeds. Use a distinct output directory per run when preserving historical successful results matters. For example, gate inspection on success:
+
+```bash
+python -m pqc_scanner scan examples/mock_enterprise_app \
+  --out reports/review_run && \
+  python -m json.tool reports/review_run/crypto_inventory.json
+```
+
+The JSON inspection runs only after successful report generation; success still does not imply zero findings or complete scan coverage.
+
 ## Sample output
 
 ```text
