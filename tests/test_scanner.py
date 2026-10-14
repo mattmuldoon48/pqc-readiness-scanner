@@ -27,6 +27,35 @@ def test_scan_detects_required_crypto_families():
     assert "x509_certificate_reference" in rule_ids
 
 
+@pytest.mark.parametrize(
+    ("key", "algorithm", "expected_match"),
+    [
+        ("alg", "rs256", "rs256"),
+        ("alg", "prefix_RS256", None),
+        ("alg", "RS256suffix", None),
+        ("alg", "HS256", None),
+        ("jwt_algorithm", "HS256", "jwt_algorithm"),
+    ],
+)
+def test_jwt_detection_distinguishes_tokens_from_fragments_and_context(
+    tmp_path: Path, key: str, algorithm: str, expected_match: str | None
+):
+    (tmp_path / "jwt.json").write_text(
+        f'{{\n  "{key}": "{algorithm}"\n}}\n', encoding="utf-8"
+    )
+
+    result = scan_path(tmp_path)
+    matches = [
+        (finding.file_path, finding.line_number, finding.matched_text)
+        for finding in result.findings
+        if finding.rule_id == "jwt_classical_algorithms"
+    ]
+
+    assert matches == (
+        [("jwt.json", 2, expected_match)] if expected_match is not None else []
+    )
+
+
 def test_scan_deduplicates_matches_without_merging_distinct_findings(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir()

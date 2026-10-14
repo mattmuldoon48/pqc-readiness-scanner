@@ -21,6 +21,8 @@ Rules are loaded from `src/pqc_scanner/rules/default_rules.yml` and matched dete
 - SSH key references such as `ssh-rsa` and `ecdsa-sha2-*`
 - X.509 and certificate references
 
+JWT detection is lexical, not a JWT configuration parser. The algorithm pattern matches whole tokens case-insensitively: `rs256` matches, while identifier fragments such as `prefix_RS256` or `RS256suffix` do not. A plain `HS256` value does not match the public-key algorithm pattern, but the separate `jwt_algorithm` context marker can still produce a finding even when its configured value is symmetric. Review the matched snippet before interpreting a finding as evidence of a particular signing algorithm.
+
 For each finding the scanner records rule ID, file path, line number, matched snippet, crypto family, usage category, severity, confidence, reason, recommendation, risk score, and risk level.
 
 ### Traversal scope
