@@ -96,6 +96,10 @@ Generated files:
 
 Use `crypto_inventory.json` as the source of truth for automation, `pqc_readiness_report.md` for reviewer handoff, `risk_summary.csv` for sorting and owner triage, and SARIF for code-scanning integrations.
 
+Finding paths and SARIF locations are relative to the **scanned target**, not `--out` or necessarily the repository root; line numbers are one-based. For the example scan above, `auth_service.py` means `examples/mock_enterprise_app/auth_service.py`, not a file under the report directory or at the checkout root.
+
+SARIF URI-encodes those relative paths but does not embed the scan root. Configure the receiving tool's source root or path mapping to the scanned directory; moving the SARIF file does not rebase its source locations. The companion inventory's `target_path` records the original absolute scan root, which may need remapping on another machine.
+
 Finding totals count retained inventory entries, not unique keys/assets or every regex hit. Repeated matches with the same reported snippet, rule, line number, and file collapse to one finding, including matches from overlapping patterns. Different files, lines, rules, or reported snippets remain separate entries, so one source line can still contribute multiple findings.
 
 A successful scan exits with status `0` even when it finds critical issues or skips files with warnings; this signals scan completion, not a clean security assessment. For CI gates, inspect `findings` and `summary` in `crypto_inventory.json` rather than relying on the exit status alone. Review its `warnings` array, or the Markdown report's `Warnings` section, for oversized, unreadable, or likely binary files that were skipped.
