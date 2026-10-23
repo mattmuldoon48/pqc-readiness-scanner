@@ -76,7 +76,7 @@ When editing a rule's `patterns`:
 - Patterns are Python regular expressions, not literal strings or shell globs. Single-quoted YAML preserves regex backslashes, for example `'\bRSA\b'`.
 - Each pattern is searched independently on each decoded line. A match from any pattern can produce a finding; patterns do not require one another to match. Matches cannot span lines, even with an inline DOTALL flag such as `(?s)`.
 - Matching is case-insensitive by default. Set `case_sensitive: true` on the rule to make case significant.
-- Blank patterns, invalid regex syntax, and patterns that match the empty string are rejected when rules are loaded.
+- `patterns` must be a nonempty list of strings; quote numeric-looking expressions such as `'123'`. Non-string entries, blank patterns, invalid regex syntax, and patterns that match the empty string are rejected when rules are loaded.
 
 A rule's `file_globs` controls where its regexes apply. These are shell-style path patterns, not regular expressions, and entries are alternatives:
 

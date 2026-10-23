@@ -54,7 +54,7 @@ class Rule(BaseModel):
             raise ValueError("Rule metadata fields must not be blank")
         return value
 
-    @field_validator("patterns", mode="before")
+    @field_validator("patterns")
     @classmethod
     def patterns_must_not_be_empty_or_blank(cls, value: list[str]) -> list[str]:
         if not value or any(not pattern.strip() for pattern in value):

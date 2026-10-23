@@ -48,3 +48,37 @@ def test_cli_missing_target_exits_nonzero(tmp_path: Path):
 
     assert completed.returncode == 1
     assert "does not exist" in completed.stdout
+
+
+def test_cli_invalid_pattern_type_reports_configuration_error(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / "crypto.txt").write_text("RSA\n", encoding="utf-8")
+    rules = tmp_path / "rules.yml"
+    rules.write_text(json.dumps({"rules": [{
+        "id": "rsa_marker",
+        "name": "RSA marker",
+        "description": "Find RSA references",
+        "patterns": ["RSA", 123],
+        "crypto_family": "RSA",
+        "usage_category": "config",
+        "severity": "high",
+        "reason": "Inventory",
+        "recommendation": "Review",
+    }]}), encoding="utf-8")
+    output = tmp_path / "reports"
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "src"
+
+    completed = subprocess.run(
+        [
+            sys.executable, "-m", "pqc_scanner", "scan", str(target),
+            "--rules", str(rules), "--out", str(output),
+        ],
+        check=False, text=True, capture_output=True, env=env,
+    )
+
+    assert completed.returncode == 1
+    assert "patterns" in completed.stdout
+    assert "Traceback" not in completed.stderr
+    assert not output.exists()

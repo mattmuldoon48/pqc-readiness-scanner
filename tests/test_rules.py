@@ -171,10 +171,14 @@ def test_blank_required_rule_metadata_is_rejected(
         load_rules(bad_rules)
 
 
-@pytest.mark.parametrize("patterns", [[], ["   "]])
-def test_empty_or_blank_patterns_are_rejected(
+@pytest.mark.parametrize(
+    "patterns",
+    [[], ["   "], 123, ["RSA", 123]],
+    ids=["empty", "blank", "invalid-container", "invalid-item"],
+)
+def test_invalid_pattern_collections_are_rejected(
     tmp_path: Path,
-    patterns: list[str],
+    patterns: object,
 ):
     rule = {
         "id": "disabled_rule",
@@ -191,10 +195,7 @@ def test_empty_or_blank_patterns_are_rejected(
     bad_rules = tmp_path / "disabled_rule.yml"
     bad_rules.write_text(json.dumps({"rules": [rule]}), encoding="utf-8")
 
-    with pytest.raises(
-        RuleLoadError,
-        match="patterns must contain at least one non-blank regex",
-    ):
+    with pytest.raises(RuleLoadError):
         load_rules(bad_rules)
 
 
