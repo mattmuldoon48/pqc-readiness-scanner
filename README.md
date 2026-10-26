@@ -104,6 +104,12 @@ Finding totals count retained inventory entries, not unique keys/assets or every
 
 A successful scan exits with status `0` even when it finds critical issues or skips files with warnings; this signals scan completion, not a clean security assessment. For CI gates, inspect `findings` and `summary` in `crypto_inventory.json` rather than relying on the exit status alone. Review its `warnings` array, or the Markdown report's `Warnings` section, for oversized, unreadable, or likely binary files that were skipped.
 
+### Handling report artifacts
+
+Generated reports are source-derived artifacts, not sanitized exports. They retain filenames and matched snippets without secret redaction; whitespace normalization and the 160-character snippet limit are not redaction. Custom patterns can capture sensitive values. The inventory includes absolute target and rules paths, Markdown includes the scan root, and baseline comparisons can retain earlier finding evidence. Review and redact a separate sharing copy before public commits, ticket attachments, or external uploads. Restrict access to originals and keep inventories used for automation or baselines unchanged.
+
+CSV quoting preserves cell values but does not neutralize spreadsheet formulas. Even a filename can be formula-like, such as `=1+1`, which a spreadsheet may interpret as a formula. When reviewing reports from untrusted source trees, import CSV columns as text with formula interpretation disabled rather than opening the CSV directly.
+
 ### Reports after a failed run
 
 An invalid target or missing/invalid rules file fails before report generation, leaving any previous reports in place. Those files do not describe the failed attempt. Report writes themselves are not atomic: a filesystem error partway through writing can leave some files refreshed and others old, absent, or incomplete.
