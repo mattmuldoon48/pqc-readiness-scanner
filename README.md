@@ -35,8 +35,11 @@ Files containing a NUL byte are skipped as likely binary. Other files are decode
 
 ## Install
 
+Python **3.10 or newer** is required. These examples use `python3.11`; if you choose another installed interpreter, check that it meets the requirement before creating the environment. Run installation and bundled-example commands from the repository root.
+
 ```bash
-python -m venv .venv
+python3.11 --version
+python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
