@@ -56,6 +56,41 @@ def test_jwt_detection_distinguishes_tokens_from_fragments_and_context(
     )
 
 
+def test_scan_respects_each_rules_case_sensitivity(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / "algorithms.txt").write_text("RSA\nrsa\nRsa\n", encoding="utf-8")
+    rules_path = tmp_path / "rules.yml"
+    rules = [
+        {
+            "id": rule_id,
+            "name": "RSA reference",
+            "description": "Inventory synthetic RSA markers",
+            "patterns": [r"\bRSA\b"],
+            "case_sensitive": case_sensitive,
+            "crypto_family": "RSA",
+            "usage_category": "config",
+            "severity": "high",
+            "reason": "Identify migration inventory",
+            "recommendation": "Review the owning service",
+        }
+        for rule_id, case_sensitive in (("sensitive", True), ("insensitive", False))
+    ]
+    rules_path.write_text(yaml.safe_dump({"rules": rules}), encoding="utf-8")
+
+    result = scan_path(target, rules_path=rules_path)
+
+    assert [
+        (finding.rule_id, finding.line_number, finding.matched_text)
+        for finding in result.findings
+    ] == [
+        ("insensitive", 1, "RSA"),
+        ("sensitive", 1, "RSA"),
+        ("insensitive", 2, "rsa"),
+        ("insensitive", 3, "Rsa"),
+    ]
+
+
 def test_scan_deduplicates_matches_without_merging_distinct_findings(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir()
