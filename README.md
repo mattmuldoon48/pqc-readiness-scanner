@@ -52,7 +52,15 @@ python -m pqc_scanner scan examples/mock_enterprise_app --out reports/mock_enter
 
 Choose an output directory separate from the scan target: `--out` cannot be the target itself or an ancestor of it. A directory nested inside the target is allowed, but its entire contents are excluded from scanning, including on later runs, so generated reports do not become new findings. Reserve that directory for reports rather than source files you want scanned; the example above keeps reports outside the target altogether.
 
-With suppressions and baseline comparison:
+For a suppression-aware baseline comparison, first save the baseline inventory:
+
+```bash
+python -m pqc_scanner scan examples/mock_enterprise_app \
+  --out reports/previous \
+  --suppressions examples/mock_enterprise_app/.pqc-scanner-ignore.yml
+```
+
+After changing the target, compare against that saved inventory using the same suppression policy:
 
 ```bash
 python -m pqc_scanner scan examples/mock_enterprise_app \
@@ -60,6 +68,8 @@ python -m pqc_scanner scan examples/mock_enterprise_app \
   --suppressions examples/mock_enterprise_app/.pqc-scanner-ignore.yml \
   --baseline reports/previous/crypto_inventory.json
 ```
+
+Keep `reports/previous` unchanged while comparing later scans; rerunning the first command replaces that baseline. With no source or suppression changes, the comparison reports no new or resolved findings.
 
 To customize detection rules, copy the bundled YAML and edit the copy before scanning:
 
