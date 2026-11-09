@@ -176,6 +176,10 @@ Use `risk_score`/`risk_level` for context-sensitive triage, and `severity` for r
 
 ## Suppressions and baselines
 
+Suppressions are opt-in: pass `--suppressions path/to/policy.yml` to load a policy. The scanner does not automatically discover `.pqc-scanner-ignore.yml` or `.pqc-scanner-ignore.yaml`, even inside the target; those names are excluded from scanned content, not automatically applied. The basic Run command above therefore includes findings that the bundled example policy would suppress.
+
+The `--suppressions` path is relative to the shell's working directory, not the scan target. From the repository root, use `--suppressions examples/mock_enterprise_app/.pqc-scanner-ignore.yml` for the bundled policy, as in the baseline commands above.
+
 Suppression files are YAML documents with explicit reasons:
 
 ```yaml
