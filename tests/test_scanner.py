@@ -91,6 +91,37 @@ def test_scan_respects_each_rules_case_sensitivity(tmp_path: Path):
     ]
 
 
+@pytest.mark.parametrize("separator", [b"\n", b"\r\n", b"\r"], ids=["lf", "crlf", "cr"])
+def test_scan_dotall_patterns_do_not_cross_line_boundaries(
+    tmp_path: Path, separator: bytes,
+):
+    target = tmp_path / "app"
+    target.mkdir()
+    (target / "crypto.txt").write_bytes(
+        separator.join([b"RSA", b"PRIVATE", b"", b"RSA PRIVATE"])
+    )
+    rules_path = tmp_path / "rules.yml"
+    rule = {
+        "id": "rsa_pair",
+        "name": "RSA private reference",
+        "description": "Inventory synthetic RSA markers",
+        "patterns": [r"(?s)RSA.*?PRIVATE"],
+        "crypto_family": "RSA",
+        "usage_category": "config",
+        "severity": "high",
+        "reason": "Identify migration inventory",
+        "recommendation": "Review the owning service",
+    }
+    rules_path.write_text(yaml.safe_dump({"rules": [rule]}), encoding="utf-8")
+
+    result = scan_path(target, rules_path=rules_path)
+
+    assert [
+        (finding.file_path, finding.line_number, finding.rule_id, finding.matched_text)
+        for finding in result.findings
+    ] == [("crypto.txt", 4, "rsa_pair", "RSA PRIVATE")]
+
+
 def test_scan_deduplicates_matches_without_merging_distinct_findings(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir()
