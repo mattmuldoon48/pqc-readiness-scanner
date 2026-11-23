@@ -122,6 +122,61 @@ def test_scan_dotall_patterns_do_not_cross_line_boundaries(
     ] == [("crypto.txt", 4, "rsa_pair", "RSA PRIVATE")]
 
 
+@pytest.mark.parametrize(
+    ("file_globs", "expected_paths"),
+    [
+        pytest.param(
+            ["*.pem"],
+            ["config/key.pem", "config/nested/key.pem", "key.pem", "other/key.pem"],
+            id="basename-glob",
+        ),
+        pytest.param(
+            ["**/*.pem"],
+            ["config/key.pem", "config/nested/key.pem", "key.pem", "other/key.pem"],
+            id="recursive-glob-includes-root",
+        ),
+        pytest.param(
+            ["config/*.pem"],
+            ["config/key.pem", "config/nested/key.pem"],
+            id="directory-glob-includes-deeper-paths",
+        ),
+        pytest.param(
+            ["*.pem", "*.txt"],
+            ["config/key.pem", "config/nested/key.pem", "key.pem", "notes.txt", "other/key.pem"],
+            id="alternative-globs",
+        ),
+        pytest.param(["*.crt"], [], id="no-applicable-files"),
+    ],
+)
+def test_file_globs_filter_findings_without_filtering_file_counts(
+    tmp_path: Path, file_globs: list[str], expected_paths: list[str],
+):
+    target = tmp_path / "app"
+    for name in ("key.pem", "config/key.pem", "config/nested/key.pem", "other/key.pem", "notes.txt"):
+        path = target / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("RSA\n", encoding="utf-8")
+    rules_path = tmp_path / "rules.yml"
+    rule = {
+        "id": "rsa_reference",
+        "name": "RSA reference",
+        "description": "Inventory synthetic RSA markers",
+        "patterns": [r"\bRSA\b"],
+        "file_globs": file_globs,
+        "crypto_family": "RSA",
+        "usage_category": "config",
+        "severity": "high",
+        "reason": "Identify migration inventory",
+        "recommendation": "Review the owning service",
+    }
+    rules_path.write_text(yaml.safe_dump({"rules": [rule]}), encoding="utf-8")
+
+    result = scan_path(target, rules_path=rules_path)
+
+    assert [finding.file_path for finding in result.findings] == expected_paths
+    assert result.files_scanned == 5
+
+
 def test_scan_deduplicates_matches_without_merging_distinct_findings(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir()
